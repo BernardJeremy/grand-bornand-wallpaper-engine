@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand-Bornand Live Panorama</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #panorama-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #panorama {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: auto;
+            object-fit: cover;
+            object-position: left center;
+        }
+
+        #status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+
+        #status.hidden {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #4ade80;
+        }
+
+        .status-detail {
+            font-size: 12px;
+            color: #d1d5db;
+            margin-top: 3px;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #datetime {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            font-variant-numeric: tabular-nums;
+        }
+
+        button {
+            background: #4ade80;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #22c55e;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.paused {
+            background: #fbbf24;
+        }
+
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 50;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="panorama-container">
+        <img id="panorama" alt="Grand-Bornand Panorama">
+    </div>
+
+    <div id="status">
+        <div class="status-title">Loading...</div>
+        <div class="status-detail">Searching for latest panorama...</div>
+    </div>
+
+    <div id="controls">
+        <button id="pauseBtn" onclick="togglePause()">Pause</button>
+        <button onclick="resetPosition()">Reset</button>
+    </div>
+
+    <div id="datetime"></div>
+
+    <div class="loader" id="loader"></div>
+
+    <script>
+        const BASE_URL = 'https://data.skaping.com/le-grand-bornand/village';
+        const LOOKBACK_HOURS = 48;
+        const PAN_DURATION = 180; // seconds for full right-to-left traversal
+        const RELOAD_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+        let isPaused = false;
+        let currentAnimation = null;
+        let panoramaUrl = null;
+        let lastUpdate = null;
+
+        // Round time to nearest 10-minute slot
+        function roundToTenMinutes(date) {
+            const minutes = Math.floor(date.getMinutes() / 10) * 10;
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 
+                          date.getHours(), minutes, 0, 0);
+        }
+
+        // Format date for URL path
+        function formatDateForUrl(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}/${month}/${day}/${hours}-${minutes}`;
+        }
+
+        // Format date for display
+        function formatDateForDisplay(date) {
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Check if image exists
+        async function checkImageExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok && response.headers.get('content-length') > 50000;
+            } catch {
+                return false;
+            }
+        }
+
+        // Find latest available panorama
+        async function findLatestPanorama() {
+            const now = new Date();
+            const startSlot = roundToTenMinutes(now);
+            const maxAttempts = LOOKBACK_HOURS * 6; // 6 slots per hour
+
+            updateStatus('Searching...', 'Looking for latest panorama...');
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const testDate = new Date(startSlot.getTime() - (i * 10 * 60 * 1000));
+                const path = formatDateForUrl(testDate);
+                const url = `${BASE_URL}/${path}.jpg`;
+
+                console.log(`Trying: ${url}`);
+
+                if (await checkImageExists(url)) {
+                    console.log(`Found: ${url}`);
+                    updateStatus('Success!', `Latest panorama: ${formatDateForDisplay(testDate)}`);
+                    lastUpdate = testDate;
+                    updateDateTime();
+                    return url;
+                }
+            }
+
+            throw new Error('No panorama found in the last ' + LOOKBACK_HOURS + ' hours');
+        }
+
+        // Update status display
+        function updateStatus(title, detail) {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <div class="status-title">${title}</div>
+                <div class="status-detail">${detail}</div>
+            `;
+        }
+
+        // Start panning animation
+        function startPanning() {
+            const panorama = document.getElementById('panorama');
+            const container = document.getElementById('panorama-container');
+
+            // Wait for image to load
+            panorama.onload = () => {
+                document.getElementById('loader').style.display = 'none';
+                
+                // Calculate dimensions
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                const imageAspect = panorama.naturalWidth / panorama.naturalHeight;
+                const containerAspect = containerWidth / containerHeight;
+
+                // Scale image to fill height
+                const imageWidth = containerHeight * imageAspect;
+                const maxOffset = imageWidth - containerWidth;
+
+                if (maxOffset <= 0) {
+                    console.warn('Panorama is not wider than screen');
+                    return;
+                }
+
+                // Start from right side
+                panorama.style.transform = `translateX(-${maxOffset}px)`;
+
+                // Animate panning
+                setTimeout(() => {
+                    if (!isPaused) {
+                        animatePanning(maxOffset);
+                    }
+                }, 500);
+
+                // Hide status after 5 seconds
+                setTimeout(() => {
+                    document.getElementById('status').classList.add('hidden');
+                }, 5000);
+            };
+        }
+
+        // Animate smooth panning
+        function animatePanning(maxOffset) {
+            const panorama = document.getElementById('panorama');
+            let position = maxOffset; // Start at right
+            let direction = -1; // Move left
+            const duration = PAN_DURATION * 1000; // Convert to milliseconds
+            const step = (maxOffset / duration) * 16; // Move per frame (60fps)
+
+            function animate() {
+                if (isPaused) {
+                    currentAnimation = requestAnimationFrame(animate);
+                    return;
+                }
+
+                position += direction * step;
+
+                // Bounce at edges
+                if (position <= 0) {
+                    position = 0;
+                    direction = 1; // Move right
+                } else if (position >= maxOffset) {
+                    position = maxOffset;
+                    direction = -1; // Move left
+                }
+
+                panorama.style.transform = `translateX(-${position}px)`;
+                panorama.style.transition = 'none';
+
+                currentAnimation = requestAnimationFrame(animate);
+            }
+
+            currentAnimation = requestAnimationFrame(animate);
+        }
+
+        // Toggle pause/resume
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = isPaused ? 'Resume' : 'Pause';
+            btn.classList.toggle('paused', isPaused);
+            
+            updateStatus(
+                isPaused ? 'Paused' : 'Running',
+                isPaused ? 'Panning paused' : `Latest: ${formatDateForDisplay(lastUpdate)}`
+            );
+            document.getElementById('status').classList.remove('hidden');
+            
+            if (isPaused) {
+                setTimeout(() => {
+                    document.getElementById('status').classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Reset to starting position
+        function resetPosition() {
+            if (currentAnimation) {
+                cancelAnimationFrame(currentAnimation);
+            }
+            const panorama = document.getElementById('panorama');
+            panorama.style.transform = 'translateX(0)';
+            panorama.style.transition = 'transform 1s ease-out';
+            
+            setTimeout(() => {
+                if (!isPaused) {
+                    startPanning();
+                }
+            }, 1000);
+        }
+
+        // Load panorama
+        async function loadPanorama() {
+            try {
+                updateStatus('Loading...', 'Searching for latest panorama...');
+                document.getElementById('loader').style.display = 'block';
+                
+                panoramaUrl = await findLatestPanorama();
+                const panorama = document.getElementById('panorama');
+                panorama.src = panoramaUrl;
+                
+                startPanning();
+            } catch (error) {
+                console.error('Error loading panorama:', error);
+                updateStatus('Error', error.message);
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        // Reload panorama periodically
+        function scheduleReload() {
+            setInterval(async () => {
+                console.log('Checking for new panorama...');
+                const newUrl = await findLatestPanorama();
+                
+                if (newUrl !== panoramaUrl) {
+                    console.log('New panorama found, reloading...');
+                    panoramaUrl = newUrl;
+                    
+                    if (currentAnimation) {
+                        cancelAnimationFrame(currentAnimation);
+                    }
+                    
+                    const panorama = document.getElementById('panorama');
+                    panorama.src = panoramaUrl;
+                    startPanning();
+                }
+            }, RELOAD_INTERVAL);
+        }
+
+        // Update date/time display
+        function updateDateTime() {
+            const datetime = document.getElementById('datetime');
+            if (lastUpdate) {
+                const dateTimeStr = lastUpdate.toLocaleString(undefined, {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                datetime.textContent = dateTimeStr;
+            } else {
+                datetime.textContent = 'Loading...';
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            loadPanorama();
+            scheduleReload();
+            updateDateTime();
+        };
+
+        // Handle window resize
+        window.onresize = () => {
+            if (currentAnimation) {
+                cancelAnimationFrame(currentAnimation);
+            }
+            setTimeout(() => {
+                if (!isPaused) {
+                    startPanning();
+                }
+            }, 100);
+        };
+    </script>
+</body>
+</html>
