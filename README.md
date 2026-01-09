@@ -1,52 +1,91 @@
-# Grand-Bornand Live Panorama Wallpaper
+# Grand-Bornand Live Panorama
 
-This PowerShell script turns the Grand-Bornand live webcam panorama into a dynamic moving desktop wallpaper on Windows 11.
+Two ways to enjoy the Grand-Bornand live webcam panorama with dynamic panning:
 
-It automatically:
-- Downloads the most recent panorama image every 30 minutes
-- Displays it as your desktop wallpaper
-- Smoothly pans the wallpaper from right to left, then left to right
-- Keeps the full vertical content of the original panorama
-- Runs continuously in the background
-- System tray controls for pause/resume and exit
+1. **PowerShell Desktop Wallpaper** (`gb_live_wallpaper_daemon.ps1`) - Windows desktop wallpaper
+2. **Web Viewer** (`index.html`) - Full-screen browser display
+
+Both automatically:
+- Find and display the most recent panorama (searches back up to 48 hours)
+- Smoothly pan across the image from right to left, then reverse
+- Auto-refresh to check for new panoramas
+- Provide pause/resume controls
 
 Source images come from:
 https://data.skaping.com/le-grand-bornand/village/YYYY/MM/DD/HH-mm.jpg
 
 ---
 
-## Features
+## 🖥️ PowerShell Desktop Wallpaper
+
+### Features
 
 - **System Tray Control**: Right-click tray icon to pause/resume or exit
-- Automatically finds the most recent available panorama (even across midnight)
+- **Visual Status**: Green icon when running, yellow when paused
+- Automatically finds the most recent available panorama
 - Updates panorama every 30 minutes
 - Smooth horizontal panning every 10 seconds
 - Starts from right side and pans left, then reverses
 - Preserves panning direction when new panorama loads
-- Preserves full image height (no vertical cropping)
-- Fullscreen wallpaper (1920×1080 and higher supported)
+- Fullscreen wallpaper support (all resolutions)
 - Works on Windows 11 without third-party software
-- Green tray icon for easy access
 
 ---
 
 ## How It Works
 
-1. The script runs continuously with a system tray icon.
+### PowerShell Script
+1. Runs continuously with a system tray icon (green = running, yellow = paused)
 2. Every 30 minutes:
-   - It searches backward in 10-minute steps to find the most recent available panorama.
-   - Downloads it locally as `panorama.jpg`.
-   - Continues panning in the current direction (no reset).
+   - Searches backward in 10-minute slots to find the most recent panorama
+   - Downloads it locally as `panorama.jpg`
+   - Continues panning in the current direction
 3. Every 10 seconds:
-   - The panorama is scaled so its height matches your screen height.
-   - A screen-sized window is cropped from the panorama.
-   - The window moves horizontally across the image.
-   - When it reaches an edge, it reverses direction.
-4. Right-click the tray icon to:
-   - Pause/Resume panning
-   - Exit the script
+   - Crops a screen-sized window from the panorama
+   - Moves the window horizontally to create panning effect
+   - Reverses direction at edges
 
-This simulates a smooth camera pan effect using a static image source.
+### Web Viewer
+1. Opens as a full-screen webpage
+2. Checks for new panoramas every 15 minutes
+3. Continuously pans using smooth 60fps animation
+4. Shows panorama timestamp in bottom-left corner
+5. Provides pause/reset controls in bottom-right
+
+---
+
+## 🌐 Web Viewer
+
+### Quick Start
+
+Simply open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+
+### Features
+
+- **Pure HTML/CSS/JavaScript** - No dependencies or installation needed
+- **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
+- **Auto-refresh** - Checks for new panoramas every 15 minutes
+- **Responsive** - Adapts to any screen size
+- **Interactive Controls**:
+  - Pause/Resume button
+  - Reset position button
+  - Panorama timestamp display (bottom-left)
+- **Smart Discovery** - Searches back up to 48 hours for latest image
+- **Full-screen display** - Perfect for displays or kiosks
+
+### Customization
+
+Edit these constants in the `<script>` section:
+
+```javascript
+const LOOKBACK_HOURS = 48;           // How far back to search
+const PAN_DURATION = 180;            // Seconds for full traversal
+const RELOAD_INTERVAL = 15 * 60 * 1000;  // Check interval (15 min)
+```
+
+---
+
+## 🖥️ PowerShell Desktop Wallpaper Setup
 
 ---
 
@@ -143,7 +182,7 @@ $lookbackHours = 48
 
 ---
 
-## Output Files
+## Output Files (PowerShell Script)
 
 The script creates:
 
@@ -155,14 +194,36 @@ Pictures\Grand-Bornand\
 
 ---
 
+## Comparison
+
+| Feature | PowerShell Script | Web Viewer |
+|---------|------------------|------------|
+| Platform | Windows only | Any OS with browser |
+| Installation | Script + Task Scheduler | Just open HTML file |
+| Integration | Desktop wallpaper | Browser window |
+| Performance | System resources | Browser resources |
+| Controls | System tray icon | On-screen buttons |
+| Auto-start | Task Scheduler | Manual |
+| Refresh Rate | 30 minutes | 15 minutes |
+| Animation | 10-second steps | 60fps smooth |
+
+---
+
 ## Notes
 
+### PowerShell Script
 - Wallpaper mode is set to **Fill**
 - Uses Windows native wallpaper API
 - No third-party tools required
-- If the Skaping server is offline, the last image remains active
-- Panning direction is preserved when a new panorama is downloaded
-- System tray icon is visible when the script is running
+- System tray icon visible when running
+- Panning direction preserved across updates
+
+### Web Viewer
+- Works in any modern browser
+- No server required - runs entirely client-side
+- Can be deployed to web hosting for remote access
+- Shows panorama timestamp in local format
+- Responsive to window resizing
 
 ---
 
