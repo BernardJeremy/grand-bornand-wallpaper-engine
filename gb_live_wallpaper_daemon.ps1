@@ -161,6 +161,107 @@ $targetW = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width
 $targetH = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height
 Write-Host "Primary screen: ${targetW}x${targetH}"
 
+# ==================== TRAY ICON SETUP ====================
+# Synchronized hashtable for cross-thread communication
+$syncHash = [hashtable]::Synchronized(@{
+    IsPaused = $false
+    ShouldExit = $false
+})
+
+# Runspace for tray icon (enables instant click handling)
+$runspace = [runspacefactory]::CreateRunspace()
+$runspace.ApartmentState = "STA"
+$runspace.ThreadOptions = "ReuseThread"
+$runspace.Open()
+$runspace.SessionStateProxy.SetVariable("syncHash", $syncHash)
+
+$psCmd = [powershell]::Create().AddScript({
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    
+    # Create icon function
+    function Create-TrayIconBitmap([string]$color) {
+        $bmp = New-Object System.Drawing.Bitmap(16, 16)
+        $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+        $gfx.Clear([System.Drawing.Color]::Transparent)
+        
+        $brush = switch ($color) {
+            "green"  { New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Lime) }
+            "yellow" { New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Yellow) }
+            default  { New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Gray) }
+        }
+        
+        $gfx.FillEllipse($brush, 2, 2, 12, 12)
+        $gfx.Dispose()
+        $brush.Dispose()
+        
+        return [System.Drawing.Icon]::FromHandle($bmp.GetHicon())
+    }
+    
+    # Create tray icon
+    $trayIcon = New-Object System.Windows.Forms.NotifyIcon
+    $trayIcon.Icon = Create-TrayIconBitmap "green"
+    $trayIcon.Text = "GB Wallpaper Daemon - Running"
+    $trayIcon.Visible = $true
+    
+    # Create context menu
+    $contextMenu = New-Object System.Windows.Forms.ContextMenuStrip
+    
+    $pauseMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem
+    $pauseMenuItem.Text = "Pause"
+    
+    $exitMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem
+    $exitMenuItem.Text = "Exit"
+    
+    $contextMenu.Items.Add($pauseMenuItem) | Out-Null
+    $contextMenu.Items.Add($exitMenuItem) | Out-Null
+    $trayIcon.ContextMenuStrip = $contextMenu
+    
+    # Event handlers (all in same thread)
+    $pauseMenuItem.Add_Click({
+        $syncHash.IsPaused = -not $syncHash.IsPaused
+        if ($syncHash.IsPaused) {
+            $pauseMenuItem.Text = "Resume"
+            $trayIcon.Icon = Create-TrayIconBitmap "yellow"
+            $trayIcon.Text = "GB Wallpaper Daemon - Paused"
+            Write-Host "[PAUSED]"
+        } else {
+            $pauseMenuItem.Text = "Pause"
+            $trayIcon.Icon = Create-TrayIconBitmap "green"
+            $trayIcon.Text = "GB Wallpaper Daemon - Running"
+            Write-Host "[RESUMED]"
+        }
+    })
+    
+    $exitMenuItem.Add_Click({
+        $syncHash.ShouldExit = $true
+        $trayIcon.Visible = $false
+        Write-Host "Exit requested from tray icon."
+        [System.Windows.Forms.Application]::Exit()
+    })
+    
+    # Store in syncHash for cleanup
+    $syncHash.TrayIcon = $trayIcon
+    $syncHash.ContextMenu = $contextMenu
+    
+    # Run message pump
+    $appContext = New-Object System.Windows.Forms.ApplicationContext
+    [System.Windows.Forms.Application]::Run($appContext)
+    
+    # Cleanup when exiting
+    $trayIcon.Visible = $false
+    $trayIcon.Dispose()
+    $contextMenu.Dispose()
+})
+$psCmd.Runspace = $runspace
+$handle = $psCmd.BeginInvoke()
+
+# Give runspace time to initialize
+Start-Sleep -Milliseconds 500
+
+Write-Host "Tray icon initialized (right-click for menu)"
+Write-Host ""
+
 # Initial download
 try {
     $dl = Download-LatestPanorama -lookbackHours $lookbackHours
@@ -190,12 +291,22 @@ if (Test-Path $panoramaPath) {
 }
 
 Write-Host ""
-Write-Host "Running... (Ctrl+C to stop)"
+Write-Host "Running... (Ctrl+C or tray Exit to stop)"
 Write-Host ""
 
-while ($true) {
-    # Hourly download + reset to beginning
-    if ((Get-Date) - $lastDownload -ge $downloadInterval) {
+try {
+    while (-not $syncHash.ShouldExit) {
+        # Check for exit request
+        if ($syncHash.ShouldExit) { break }
+        
+        # Skip updates if paused
+        if ($syncHash.IsPaused) {
+            Start-Sleep -Seconds 1
+            continue
+        }
+        
+        # Hourly download + reset to beginning
+        if ((Get-Date) - $lastDownload -ge $downloadInterval) {
         try {
             $dl = Download-LatestPanorama -lookbackHours $lookbackHours
             $lastDownload = Get-Date
@@ -220,25 +331,51 @@ while ($true) {
         }
     }
 
-    # Pan update
-    if (Test-Path $panoramaPath) {
-        try {
-            $info = Render-FrameFromPanorama -panoramaFile $panoramaPath -frameFile $framePath -xOffset $x -targetW $targetW -targetH $targetH
-            Apply-WallpaperFill $framePath
+        # Pan update
+        if (Test-Path $panoramaPath) {
+            try {
+                $info = Render-FrameFromPanorama -panoramaFile $panoramaPath -frameFile $framePath -xOffset $x -targetW $targetW -targetH $targetH
+                Apply-WallpaperFill $framePath
 
-            $maxX = [int]$info.MaxX
-            $step = 0
-            if ($maxX -gt 0) {
-                $step = [int]([math]::Max(1, [math]::Floor($maxX / $fullTraverseSteps)))
+                $maxX = [int]$info.MaxX
+                $step = 0
+                if ($maxX -gt 0) {
+                    $step = [int]([math]::Max(1, [math]::Floor($maxX / $fullTraverseSteps)))
+                }
+
+                $x = $x + ($dir * $step)
+                if ($x -ge $maxX) { $x = $maxX; $dir = -1 }
+                if ($x -le 0)     { $x = 0;     $dir = 1 }
+            } catch {
+                Write-Host "WARNING: pan update error: $($_.Exception.Message)"
             }
-
-            $x = $x + ($dir * $step)
-            if ($x -ge $maxX) { $x = $maxX; $dir = -1 }
-            if ($x -le 0)     { $x = 0;     $dir = 1 }
-        } catch {
-            Write-Host "WARNING: pan update error: $($_.Exception.Message)"
         }
-    }
 
-    Start-Sleep -Seconds $panIntervalSeconds
+        Start-Sleep -Seconds $panIntervalSeconds
+    }
+} finally {
+    # Cleanup tray icon
+    Write-Host "Cleaning up tray icon..."
+    
+    # Signal the runspace to exit
+    if ($null -ne $syncHash) {
+        $syncHash.ShouldExit = $true
+    }
+    
+    # Stop the message pump
+    if ($null -ne $runspace) {
+        try {
+            $runspace.Close()
+        } catch {}
+        $runspace.Dispose()
+    }
+    
+    if ($null -ne $psCmd) {
+        try {
+            $psCmd.Stop()
+        } catch {}
+        $psCmd.Dispose()
+    }
+    
+    Write-Host "Tray icon cleaned up. Exiting."
 }
