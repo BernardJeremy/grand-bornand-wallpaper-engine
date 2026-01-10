@@ -93,8 +93,6 @@ async function findLatestPanorama() {
     const slotsPerHour = isStation ? 2 : 6;
     const maxAttempts = LOOKBACK_HOURS * slotsPerHour;
 
-    updateStatus('Searching...', 'Looking for latest panorama...');
-
     const baseUrl = PANORAMAS[currentPanorama].url;
 
     for (let i = 0; i < maxAttempts; i++) {
@@ -106,7 +104,6 @@ async function findLatestPanorama() {
 
         if (await checkImageExists(url)) {
             console.log(`Found: ${url}`);
-            updateStatus('Success!', `Latest panorama: ${formatDateForDisplay(testDate)}`);
             lastUpdate = testDate;
             updateDateTime();
             return url;
@@ -114,15 +111,6 @@ async function findLatestPanorama() {
     }
 
     throw new Error('No panorama found in the last ' + LOOKBACK_HOURS + ' hours');
-}
-
-// Update status display
-function updateStatus(title, detail) {
-    const status = document.getElementById('status');
-    status.innerHTML = `
-        <div class="status-title">${title}</div>
-        <div class="status-detail">${detail}</div>
-    `;
 }
 
 // Start panning animation
@@ -156,11 +144,6 @@ function startPanning() {
         setTimeout(() => {
             animatePanning(maxOffset);
         }, 100);
-
-        // Hide status after 5 seconds
-        setTimeout(() => {
-            document.getElementById('status').classList.add('hidden');
-        }, 5000);
     };
 
     // Wait for image to load if not loaded yet
@@ -217,7 +200,6 @@ function changePanorama() {
 // Load panorama
 async function loadPanorama() {
     try {
-        updateStatus('Loading...', 'Searching for latest panorama...');
         document.getElementById('loader').style.display = 'block';
         
         panoramaUrl = await findLatestPanorama();
@@ -227,7 +209,6 @@ async function loadPanorama() {
         startPanning();
     } catch (error) {
         console.error('Error loading panorama:', error);
-        updateStatus('Error', error.message);
         document.getElementById('loader').style.display = 'none';
     }
 }
