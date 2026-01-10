@@ -22,6 +22,7 @@ const PAN_DURATION = 180; // seconds for full right-to-left traversal
 const RELOAD_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 let currentPanorama = 'village'; // Default to Village
+let speedMultiplier = 1; // Default speed
 let currentAnimation = null;
 let panoramaUrl = null;
 let lastUpdate = null;
@@ -160,22 +161,26 @@ function animatePanning(maxOffset) {
     let position = maxOffset; // Start at right
     let direction = -1; // Move left
     const duration = PAN_DURATION * 1000; // Convert to milliseconds
-    const step = (maxOffset / duration) * 16; // Move per frame (60fps)
+    const baseStep = (maxOffset / duration) * 16; // Base step per frame (60fps)
 
     function animate() {
-        position += direction * step;
+        // Skip movement if speed is 0
+        if (speedMultiplier > 0) {
+            const step = baseStep * speedMultiplier;
+            position += direction * step;
 
-        // Bounce at edges
-        if (position <= 0) {
-            position = 0;
-            direction = 1; // Move right
-        } else if (position >= maxOffset) {
-            position = maxOffset;
-            direction = -1; // Move left
+            // Bounce at edges
+            if (position <= 0) {
+                position = 0;
+                direction = 1; // Move right
+            } else if (position >= maxOffset) {
+                position = maxOffset;
+                direction = -1; // Move left
+            }
+
+            panorama.style.transform = `translateX(-${position}px)`;
+            panorama.style.transition = 'none';
         }
-
-        panorama.style.transform = `translateX(-${position}px)`;
-        panorama.style.transition = 'none';
 
         currentAnimation = requestAnimationFrame(animate);
     }
@@ -195,6 +200,14 @@ function changePanorama() {
     
     // Reload with new panorama
     loadPanorama();
+}
+
+// Change panning speed
+function changeSpeed() {
+    const selector = document.getElementById('speedSelector');
+    speedMultiplier = parseFloat(selector.value);
+    
+    // No need to restart animation, it will pick up the new speed on next frame
 }
 
 // Load panorama
