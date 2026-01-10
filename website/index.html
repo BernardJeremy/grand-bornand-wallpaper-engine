@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand-Bornand Live Panorama</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="panorama-container">
+        <img id="panorama" alt="Grand-Bornand Panorama">
+    </div>
+
+    <div id="status">
+        <div class="status-title">Loading...</div>
+        <div class="status-detail">Searching for latest panorama...</div>
+    </div>
+
+    <div id="controls">
+        <select id="panoramaSelector" onchange="changePanorama()">
+            <option value="village">Village</option>
+            <option value="station">Station</option>
+            <option value="maroly">Maroly</option>
+            <option value="lachat">Lachat</option>
+        </select>
+    </div>
+
+    <div id="datetime"></div>
+
+    <div class="loader" id="loader"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

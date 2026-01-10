@@ -1,18 +1,21 @@
 # Grand-Bornand Live Panorama
 
-Two ways to enjoy the Grand-Bornand live webcam panorama with dynamic panning:
+Two ways to enjoy the Grand-Bornand live webcam panoramas with dynamic panning:
 
 1. **PowerShell Desktop Wallpaper** (`gb_live_wallpaper_daemon.ps1`) - Windows desktop wallpaper
-2. **Web Viewer** (`index.html`) - Full-screen browser display
+2. **Web Viewer** (`website/`) - Full-screen browser display
 
 Both automatically:
 - Find and display the most recent panorama (searches back up to 48 hours)
 - Smoothly pan across the image from right to left, then reverse
 - Auto-refresh to check for new panoramas
-- Provide pause/resume controls
 
-Source images come from:
-https://data.skaping.com/le-grand-bornand/village/YYYY/MM/DD/HH-mm.jpg
+### Available Panoramas
+
+- **Village**: https://data.skaping.com/le-grand-bornand/village/ (every 10 min)
+- **Station**: https://data3.skaping.com/grand-bornand/chinaillon/ (every 30 min at XX:01 and XX:31)
+- **Maroly**: https://data3.skaping.com/grand-bornand/terres-rouges/ (every 10 min)
+- **Lachat**: https://data.skaping.com/grand-bornand/la-floria/ (every 10 min)
 
 ---
 
@@ -58,29 +61,55 @@ https://data.skaping.com/le-grand-bornand/village/YYYY/MM/DD/HH-mm.jpg
 
 ### Quick Start
 
-Simply open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+Simply open `website/index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+
+### Project Structure
+
+```
+website/
+  ├── index.html    # Main HTML structure
+  ├── styles.css    # Styling and animations
+  └── script.js     # Panorama loading and panning logic
+```
 
 ### Features
 
-- **Pure HTML/CSS/JavaScript** - No dependencies or installation needed
+- **Modular Architecture** - Separate HTML, CSS, and JavaScript files for easy maintenance
+- **Multiple Panoramas** - Switch between 4 different Grand-Bornand viewpoints:
+  - Village (default)
+  - Station (Chinaillon)
+  - Maroly (Terres Rouges)
+  - Lachat (La Floria)
+- **Smart Scheduling** - Automatically handles different update frequencies (10 min or 30 min)
 - **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
 - **Auto-refresh** - Checks for new panoramas every 15 minutes
 - **Responsive** - Adapts to any screen size
 - **Interactive Controls**:
-  - Pause/Resume button
-  - Reset position button
+  - Panorama selector dropdown (bottom-right)
   - Panorama timestamp display (bottom-left)
 - **Smart Discovery** - Searches back up to 48 hours for latest image
 - **Full-screen display** - Perfect for displays or kiosks
 
 ### Customization
 
-Edit these constants in the `<script>` section:
+Edit these constants in `script.js`:
 
 ```javascript
-const LOOKBACK_HOURS = 48;           // How far back to search
-const PAN_DURATION = 180;            // Seconds for full traversal
-const RELOAD_INTERVAL = 15 * 60 * 1000;  // Check interval (15 min)
+const LOOKBACK_HOURS = 48;              // How far back to search
+const PAN_DURATION = 180;               // Seconds for full traversal
+const RELOAD_INTERVAL = 15 * 60 * 1000; // Check interval (15 min)
+```
+
+To add more panoramas, update the `PANORAMAS` object:
+
+```javascript
+const PANORAMAS = {
+    village: {
+        name: 'Village',
+        url: 'https://data.skaping.com/le-grand-bornand/village'
+    },
+    // Add more...
+};
 ```
 
 ---
@@ -176,7 +205,8 @@ $lookbackHours = 48
 ## System Tray Controls
 
 - **Right-click** the green tray icon to access controls
-- **Pause**: Stops panning and downloads (wallpaper stays at current position)
+- **Pause**: Stops panning and dPanorama selector dropdown |
+| Panoramas | Village only | 4 locations (Village, Station, Maroly, Lachat)er stays at current position)
 - **Resume**: Continues panning from where it stopped
 - **Exit**: Closes the script and removes tray icon
 
@@ -222,7 +252,9 @@ Pictures\Grand-Bornand\
 - Works in any modern browser
 - No server required - runs entirely client-side
 - Can be deployed to web hosting for remote access
-- Shows panorama timestamp in local format
+- Shows panorama timestamp in l
+- Modular code structure for easy customization
+- Supports multiple panorama sources with different update schedulesocal format
 - Responsive to window resizing
 
 ---
