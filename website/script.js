@@ -89,20 +89,16 @@ async function checkImageExists(url) {
 // Find latest available panorama
 async function findLatestPanorama() {
     const now = new Date();
-    const isStation = currentPanorama === 'station';
-    const startSlot = isStation ? roundToStationTime(now) : roundToTenMinutes(now);
-    const interval = isStation ? 30 : 10; // minutes
-    const slotsPerHour = isStation ? 2 : 6;
-    const maxAttempts = LOOKBACK_HOURS * slotsPerHour;
-
     const baseUrl = PANORAMAS[currentPanorama].url;
 
-    for (let i = 0; i < maxAttempts; i++) {
-        const testDate = new Date(startSlot.getTime() - (i * interval * 60 * 1000));
+    // Phase 1: Search minute-by-minute for the last 2 hours
+    const minutesPhase1 = 2 * 60; // 120 minutes
+    for (let i = 0; i < minutesPhase1; i++) {
+        const testDate = new Date(now.getTime() - (i * 60 * 1000));
         const path = formatDateForUrl(testDate);
         const url = `${baseUrl}/${path}.jpg`;
 
-        console.log(`Trying: ${url}`);
+        console.log(`Trying (minute-by-minute): ${url}`);
 
         if (await checkImageExists(url)) {
             console.log(`Found: ${url}`);
@@ -112,7 +108,25 @@ async function findLatestPanorama() {
         }
     }
 
-    throw new Error('No panorama found in the last ' + LOOKBACK_HOURS + ' hours');
+    // Phase 2: Search every 10 minutes for the next 3 hours (from 2 to 5 hours back)
+    const startPhase2 = 2 * 60; // Start at 120 minutes back
+    const endPhase2 = 5 * 60; // End at 300 minutes back (5 hours total)
+    for (let i = startPhase2; i < endPhase2; i += 10) {
+        const testDate = new Date(now.getTime() - (i * 60 * 1000));
+        const path = formatDateForUrl(testDate);
+        const url = `${baseUrl}/${path}.jpg`;
+
+        console.log(`Trying (10-minute intervals): ${url}`);
+
+        if (await checkImageExists(url)) {
+            console.log(`Found: ${url}`);
+            lastUpdate = testDate;
+            updateDateTime();
+            return url;
+        }
+    }
+
+    throw new Error('No panorama found in the last 5 hours');
 }
 
 // Start panning animation

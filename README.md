@@ -6,7 +6,7 @@ Two ways to enjoy the Grand-Bornand live webcam panoramas with dynamic panning:
 2. **Web Viewer** (`website/`) - Full-screen browser display
 
 Both automatically:
-- Find and display the most recent panorama (searches back up to 48 hours)
+- Find and display the most recent panorama (searches minute-by-minute for 2 hours, then every 10 minutes for next 3 hours)
 - Smoothly pan across the image from right to left, then reverse
 - Auto-refresh to check for new panoramas
 
@@ -50,10 +50,13 @@ Both automatically:
 
 ### Web Viewer
 1. Opens as a full-screen webpage
-2. Checks for new panoramas every 15 minutes
-3. Continuously pans using smooth 60fps animation
-4. Shows panorama timestamp in bottom-left corner
-5. Provides pause/reset controls in bottom-right
+2. Searches for the most recent panorama:
+   - Minute-by-minute for the last 2 hours
+   - Every 10 minutes for the next 3 hours (up to 5 hours back total)
+3. Checks for new panoramas every 15 minutes
+4. Continuously pans using smooth 60fps animation
+5. Shows panorama timestamp in top-left corner
+6. Provides panorama selector, speed control, and other controls in bottom-right
 
 ---
 
@@ -96,7 +99,7 @@ website/
 - **Clean Interface**:
   - Panorama selector and speed control (bottom-right)
   - Timestamp display (top-left)
-- **Smart Discovery** - Searches back up to 48 hours for latest image
+- **Smart Discovery** - Searches minute-by-minute for 2 hours, then every 10 minutes for next 3 hours
 - **Full-screen display** - Perfect for displays or kiosks
 
 ### Customization
@@ -104,11 +107,14 @@ website/
 Edit these constants in `script.js`:
 
 ```javascript
-const LOOKBACK_HOURS = 48;              // How far back to search
 const PAN_DURATION = 180;               // Seconds for full traversal
 const RELOAD_INTERVAL = 15 * 60 * 1000; // Check interval (15 min)
-let speedMultiplier = 1;                // Default speed (changed via UI)
+let speedMultiplier = 0.5;              // Default speed (changed via UI)
 ```
+
+The panorama search logic in `findLatestPanorama()` searches:
+- Minute-by-minute for the last 2 hours (120 attempts)
+- Every 10 minutes from 2-5 hours back (18 attempts)
 
 To add more panoramas, update the `PANORAMAS` object:
 
