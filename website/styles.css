@@ -19,6 +19,7 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    display: flex;
 }
 
 #panorama {
@@ -29,6 +30,13 @@ body, html {
     width: auto;
     object-fit: cover;
     object-position: left center;
+    display: flex;
+}
+
+#panorama img {
+    height: 100%;
+    width: auto;
+    flex-shrink: 0;
 }
 
 #controls {

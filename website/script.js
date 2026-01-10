@@ -117,6 +117,8 @@ async function findLatestPanorama() {
 // Start panning animation
 function startPanning() {
     const panorama = document.getElementById('panorama');
+    const panoramaImg1 = document.getElementById('panorama-img1');
+    const panoramaImg2 = document.getElementById('panorama-img2');
     const container = document.getElementById('panorama-container');
 
     // Function to initialize panning
@@ -126,40 +128,39 @@ function startPanning() {
         // Calculate dimensions
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-        const imageAspect = panorama.naturalWidth / panorama.naturalHeight;
+        const imageAspect = panoramaImg1.naturalWidth / panoramaImg1.naturalHeight;
 
         // Scale image to fill height and calculate width
         const imageWidth = containerHeight * imageAspect;
-        const maxOffset = imageWidth - containerWidth;
+        const maxOffset = imageWidth; // Pan one full image width before wrapping
+        const containerVisibleWidth = imageWidth - containerWidth; // Right-most position
 
-        if (maxOffset <= 0) {
+        if (imageWidth <= containerWidth) {
             console.warn('Panorama is not wider than screen');
             return;
         }
 
-        // Reset any existing transform
-        panorama.style.transition = 'none';
-        panorama.style.transform = `translateX(-${maxOffset}px)`;
+        // Start from right side (show the right end of the panorama)
+        panorama.style.transform = `translateX(-${containerVisibleWidth + maxOffset}px)`;
 
         // Animate panning
         setTimeout(() => {
-            animatePanning(maxOffset);
+            animatePanning(maxOffset, containerVisibleWidth);
         }, 100);
     };
 
     // Wait for image to load if not loaded yet
-    if (panorama.complete && panorama.naturalWidth > 0) {
+    if (panoramaImg1.complete && panoramaImg1.naturalWidth > 0) {
         initPanning();
     } else {
-        panorama.onload = initPanning;
+        panoramaImg1.onload = initPanning;
     }
 }
 
 // Animate smooth panning
-function animatePanning(maxOffset) {
+function animatePanning(maxOffset, startOffset = 0) {
     const panorama = document.getElementById('panorama');
-    let position = maxOffset; // Start at right
-    let direction = -1; // Move left
+    let position = maxOffset + startOffset; // Start at right end
     const duration = PAN_DURATION * 1000; // Convert to milliseconds
     const baseStep = (maxOffset / duration) * 16; // Base step per frame (60fps)
 
@@ -167,15 +168,12 @@ function animatePanning(maxOffset) {
         // Skip movement if speed is 0
         if (speedMultiplier > 0) {
             const step = baseStep * speedMultiplier;
-            position += direction * step;
+            position -= step; // Move left
 
-            // Bounce at edges
-            if (position <= 0) {
-                position = 0;
-                direction = 1; // Move right
-            } else if (position >= maxOffset) {
-                position = maxOffset;
-                direction = -1; // Move left
+            // Seamlessly wrap around when reaching the left edge
+            // Reset position when we've panned one full image width
+            if (position <= startOffset) {
+                position = maxOffset + startOffset;
             }
 
             panorama.style.transform = `translateX(-${position}px)`;
@@ -216,8 +214,10 @@ async function loadPanorama() {
         document.getElementById('loader').style.display = 'block';
         
         panoramaUrl = await findLatestPanorama();
-        const panorama = document.getElementById('panorama');
-        panorama.src = panoramaUrl;
+        const panoramaImg1 = document.getElementById('panorama-img1');
+        const panoramaImg2 = document.getElementById('panorama-img2');
+        panoramaImg1.src = panoramaUrl;
+        panoramaImg2.src = panoramaUrl;
         
         startPanning();
     } catch (error) {
@@ -240,8 +240,10 @@ function scheduleReload() {
                 cancelAnimationFrame(currentAnimation);
             }
             
-            const panorama = document.getElementById('panorama');
-            panorama.src = panoramaUrl;
+            const panoramaImg1 = document.getElementById('panorama-img1');
+            const panoramaImg2 = document.getElementById('panorama-img2');
+            panoramaImg1.src = panoramaUrl;
+            panoramaImg2.src = panoramaUrl;
             startPanning();
         }
     }, RELOAD_INTERVAL);
@@ -267,6 +269,15 @@ function updateDateTime() {
 
 // Initialize
 window.onload = () => {
+    // Add x5 speed option if on localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const speedSelector = document.getElementById('speedSelector');
+        const x5Option = document.createElement('option');
+        x5Option.value = '5';
+        x5Option.textContent = 'x5';
+        speedSelector.appendChild(x5Option);
+    }
+    
     loadPanorama();
     scheduleReload();
     updateDateTime();
