@@ -19,7 +19,7 @@ const PANORAMAS = {
 
 const LOOKBACK_HOURS = 48;
 const PAN_DURATION = 180; // seconds for full right-to-left traversal
-const RELOAD_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentPanorama = 'village'; // Default to Village
 let speedMultiplier = 0.5; // Default speed (labeled as x1 in UI)

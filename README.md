@@ -53,7 +53,7 @@ Both automatically:
 2. Searches for the most recent panorama:
    - Minute-by-minute for the last 2 hours
    - Every 10 minutes for the next 3 hours (up to 5 hours back total)
-3. Checks for new panoramas every 15 minutes
+3. Checks for new panoramas every 5 minutes
 4. Continuously pans using smooth 60fps animation
 5. Shows panorama timestamp in top-left corner
 6. Provides panorama selector, speed control, and other controls in bottom-right
@@ -94,7 +94,7 @@ website/
   - 10 minutes for Village, Maroly, and Lachat
   - 30 minutes (at XX:01 and XX:31) for Station
 - **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
-- **Auto-refresh** - Checks for new panoramas every 15 minutes
+- **Auto-refresh** - Checks for new panoramas every 5 minutes
 - **Fully Responsive** - Adapts seamlessly to window resizing and zoom changes
 - **Clean Interface**:
   - Panorama selector and speed control (bottom-right)
@@ -108,7 +108,7 @@ Edit these constants in `script.js`:
 
 ```javascript
 const PAN_DURATION = 180;               // Seconds for full traversal
-const RELOAD_INTERVAL = 15 * 60 * 1000; // Check interval (15 min)
+const RELOAD_INTERVAL = 5 * 60 * 1000; // Check interval (5 min)
 let speedMultiplier = 0.5;              // Default speed (changed via UI)
 ```
 
@@ -252,7 +252,7 @@ Pictures\Grand-Bornand\
 | Performance | System resources | Browser resources |
 | Controls | System tray icon | On-screen buttons |
 | Auto-start | Task Scheduler | Manual |
-| Refresh Rate | 30 minutes | 15 minutes |
+| Refresh Rate | 30 minutes | 5 minutes |
 | Animation | 10-second steps | 60fps smooth |
 
 ---
