@@ -130,17 +130,16 @@ function startPanning() {
     const panorama = document.getElementById('panorama');
     const container = document.getElementById('panorama-container');
 
-    // Wait for image to load
-    panorama.onload = () => {
+    // Function to initialize panning
+    const initPanning = () => {
         document.getElementById('loader').style.display = 'none';
         
         // Calculate dimensions
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         const imageAspect = panorama.naturalWidth / panorama.naturalHeight;
-        const containerAspect = containerWidth / containerHeight;
 
-        // Scale image to fill height
+        // Scale image to fill height and calculate width
         const imageWidth = containerHeight * imageAspect;
         const maxOffset = imageWidth - containerWidth;
 
@@ -149,19 +148,27 @@ function startPanning() {
             return;
         }
 
-        // Start from right side
+        // Reset any existing transform
+        panorama.style.transition = 'none';
         panorama.style.transform = `translateX(-${maxOffset}px)`;
 
         // Animate panning
         setTimeout(() => {
             animatePanning(maxOffset);
-        }, 500);
+        }, 100);
 
         // Hide status after 5 seconds
         setTimeout(() => {
             document.getElementById('status').classList.add('hidden');
         }, 5000);
     };
+
+    // Wait for image to load if not loaded yet
+    if (panorama.complete && panorama.naturalWidth > 0) {
+        initPanning();
+    } else {
+        panorama.onload = initPanning;
+    }
 }
 
 // Animate smooth panning
@@ -272,11 +279,29 @@ window.onload = () => {
 };
 
 // Handle window resize
+let resizeTimeout;
 window.onresize = () => {
+    // Cancel any pending resize handling
+    if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+    }
+    
+    // Cancel current animation
     if (currentAnimation) {
         cancelAnimationFrame(currentAnimation);
+        currentAnimation = null;
     }
-    setTimeout(() => {
-        startPanning();
-    }, 100);
+    
+    // Debounce resize handling
+    resizeTimeout = setTimeout(() => {
+        const panorama = document.getElementById('panorama');
+        // Reset transform and transition to recalculate
+        panorama.style.transition = 'none';
+        panorama.style.transform = 'translateX(0)';
+        
+        // Restart panning after a brief moment
+        requestAnimationFrame(() => {
+            startPanning();
+        });
+    }, 150);
 };
