@@ -80,13 +80,22 @@ website/
   - Station (Chinaillon)
   - Maroly (Terres Rouges)
   - Lachat (La Floria)
-- **Smart Scheduling** - Automatically handles different update frequencies (10 min or 30 min)
+- **Variable Speed Control** - Adjust panning speed on the fly:
+  - x0 (pause/frozen)
+  - x0.5 (slow)
+  - x1 (default)
+  - x2 (fast)
+  - x5 (debug speed, only on localhost)
+- **Seamless 360° Loop** - Continuous panning with no jarring jumps or direction changes
+- **Smart Scheduling** - Automatically handles different update frequencies:
+  - 10 minutes for Village, Maroly, and Lachat
+  - 30 minutes (at XX:01 and XX:31) for Station
 - **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
 - **Auto-refresh** - Checks for new panoramas every 15 minutes
-- **Responsive** - Adapts to any screen size
-- **Interactive Controls**:
-  - Panorama selector dropdown (bottom-right)
-  - Panorama timestamp display (bottom-left)
+- **Fully Responsive** - Adapts seamlessly to window resizing and zoom changes
+- **Clean Interface**:
+  - Panorama selector and speed control (bottom-right)
+  - Timestamp display (top-left)
 - **Smart Discovery** - Searches back up to 48 hours for latest image
 - **Full-screen display** - Perfect for displays or kiosks
 
@@ -98,6 +107,7 @@ Edit these constants in `script.js`:
 const LOOKBACK_HOURS = 48;              // How far back to search
 const PAN_DURATION = 180;               // Seconds for full traversal
 const RELOAD_INTERVAL = 15 * 60 * 1000; // Check interval (15 min)
+let speedMultiplier = 1;                // Default speed (changed via UI)
 ```
 
 To add more panoramas, update the `PANORAMAS` object:
@@ -111,6 +121,8 @@ const PANORAMAS = {
     // Add more...
 };
 ```
+
+To add special timing for panoramas (like Station's 30-minute intervals), modify the `findLatestPanorama()` function.
 
 ---
 
