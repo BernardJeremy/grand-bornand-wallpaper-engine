@@ -26,6 +26,7 @@ let speedMultiplier = 1; // Default speed
 let currentAnimation = null;
 let panoramaUrl = null;
 let lastUpdate = null;
+let currentPosition = 0; // Track current panning position
 
 // Round time to nearest 10-minute slot
 function roundToTenMinutes(date) {
@@ -115,7 +116,7 @@ async function findLatestPanorama() {
 }
 
 // Start panning animation
-function startPanning() {
+function startPanning(preservePosition = false) {
     const panorama = document.getElementById('panorama');
     const panoramaImg1 = document.getElementById('panorama-img1');
     const panoramaImg2 = document.getElementById('panorama-img2');
@@ -140,12 +141,17 @@ function startPanning() {
             return;
         }
 
-        // Start from right side (show the right end of the panorama)
-        panorama.style.transform = `translateX(-${containerVisibleWidth + maxOffset}px)`;
+        // Start from preserved position or right side
+        if (preservePosition && currentPosition > 0) {
+            panorama.style.transform = `translateX(-${currentPosition}px)`;
+        } else {
+            panorama.style.transform = `translateX(-${containerVisibleWidth + maxOffset}px)`;
+            currentPosition = containerVisibleWidth + maxOffset;
+        }
 
         // Animate panning
         setTimeout(() => {
-            animatePanning(maxOffset, containerVisibleWidth);
+            animatePanning(maxOffset, containerVisibleWidth, preservePosition ? currentPosition : (containerVisibleWidth + maxOffset));
         }, 100);
     };
 
@@ -158,9 +164,9 @@ function startPanning() {
 }
 
 // Animate smooth panning
-function animatePanning(maxOffset, startOffset = 0) {
+function animatePanning(maxOffset, startOffset = 0, initialPosition = null) {
     const panorama = document.getElementById('panorama');
-    let position = maxOffset + startOffset; // Start at right end
+    let position = initialPosition !== null ? initialPosition : (maxOffset + startOffset); // Use provided position or start at right end
     const duration = PAN_DURATION * 1000; // Convert to milliseconds
     const baseStep = (maxOffset / duration) * 16; // Base step per frame (60fps)
 
@@ -179,6 +185,9 @@ function animatePanning(maxOffset, startOffset = 0) {
             panorama.style.transform = `translateX(-${position}px)`;
             panorama.style.transition = 'none';
         }
+
+        // Save current position for reload
+        currentPosition = position;
 
         currentAnimation = requestAnimationFrame(animate);
     }
@@ -244,7 +253,7 @@ function scheduleReload() {
             const panoramaImg2 = document.getElementById('panorama-img2');
             panoramaImg1.src = panoramaUrl;
             panoramaImg2.src = panoramaUrl;
-            startPanning();
+            startPanning(true); // Preserve position on auto-reload
         }
     }, RELOAD_INTERVAL);
 }
