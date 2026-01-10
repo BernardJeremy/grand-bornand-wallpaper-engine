@@ -22,7 +22,7 @@ const PAN_DURATION = 180; // seconds for full right-to-left traversal
 const RELOAD_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 let currentPanorama = 'village'; // Default to Village
-let speedMultiplier = 1; // Default speed
+let speedMultiplier = 0.5; // Default speed (labeled as x1 in UI)
 let currentAnimation = null;
 let panoramaUrl = null;
 let lastUpdate = null;
@@ -282,7 +282,7 @@ window.onload = () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         const speedSelector = document.getElementById('speedSelector');
         const x5Option = document.createElement('option');
-        x5Option.value = '5';
+        x5Option.value = '2.5';
         x5Option.textContent = 'x5';
         speedSelector.appendChild(x5Option);
     }
