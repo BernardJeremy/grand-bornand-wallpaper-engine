@@ -27,14 +27,17 @@ What would typically take several hours of development:
 
 2. **Web Viewer (HTML/CSS/JavaScript)**
    - Full-screen responsive layout with modular file structure
-   - Multiple panorama sources with smart scheduling
+   - Multiple panorama sources with cache-based URL loading
+   - Bash script to fetch latest panorama URLs from og:image meta tags
    - Seamless 360° continuous loop animation (dual-image technique)
-   - Variable speed control (x0 to x5)
+   - Variable speed control (x0 to x2.5)
    - Smooth 60fps animation with requestAnimationFrame
-   - Asynchronous image discovery with different time intervals
+   - Weather integration with Open-Meteo API (temperature, icon, elevation)
+   - Separate lean boxes for timestamp and weather (centered, uniform design)
    - Dynamic UI controls (panorama selector, speed control)
    - Robust window resize and zoom handling
    - Cross-browser compatibility
+   - Auto-refresh every minute for new panoramas
 
 3. **Documentation**
    - Comprehensive README with setup instructions
@@ -74,11 +77,14 @@ For **production systems**, the balance shifts:
 A fully functional panorama viewer with:
 - Desktop wallpaper integration (PowerShell)
 - Professional web viewer with 4 panorama locations
+- Cache-based panorama loading with bash script and CRON automation
 - Seamless 360° continuous loop animation
-- Variable speed control (5 speeds)
-- Smart scheduling for different update frequencies
+- Variable speed control (6 speeds: x0, x0.25, x0.5, x1, x2, x2.5)
+- Weather display with temperature, icon, and elevation
+- Separate lean, centered boxes for timestamp and weather
 - Fully responsive design that handles resize and zoom
 - Modular, maintainable code structure
+- Auto-refresh every minute
 
 All completed through iterative AI-assisted development, where the AI handled implementation details while human guidance shaped the features and user experience.
 

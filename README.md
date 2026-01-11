@@ -6,7 +6,7 @@ Two ways to enjoy the Grand-Bornand live webcam panoramas with dynamic panning:
 2. **Web Viewer** (`website/`) - Full-screen browser display
 
 Both automatically:
-- Find and display the most recent panorama (searches minute-by-minute for 2 hours, then every 10 minutes for next 3 hours)
+- Find and display the most recent panorama from cached URLs
 - Smoothly pan across the image from right to left, then reverse
 - Auto-refresh to check for new panoramas
 
@@ -50,13 +50,12 @@ Both automatically:
 
 ### Web Viewer
 1. Opens as a full-screen webpage
-2. Searches for the most recent panorama:
-   - Minute-by-minute for the last 2 hours
-   - Every 10 minutes for the next 3 hours (up to 5 hours back total)
-3. Checks for new panoramas every 5 minutes
+2. Loads panorama URLs from cached JSON file (`panoramas_cache.json`)
+3. Checks for updated panorama URLs every minute (refetches the cache)
 4. Continuously pans using smooth 60fps animation
-5. Shows panorama timestamp in top-left corner
-6. Provides panorama selector, speed control, and other controls in bottom-right
+5. Shows panorama timestamp in top box (top-left corner)
+6. Shows weather icon, temperature, and elevation in separate box below (top-left corner)
+7. Provides panorama selector, speed control, and other controls in bottom-right
 
 ---
 
@@ -64,15 +63,41 @@ Both automatically:
 
 ### Quick Start
 
-Simply open `website/index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+**Important**: Before opening the web viewer, generate the panorama cache:
+
+```bash
+cd website
+./fetch_panoramas.sh
+```
+
+This creates `panoramas_cache.json` with the latest panorama URLs for all locations.
+
+Then, open `website/index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+
+### Keeping Panoramas Updated
+
+**Recommended**: Set up a CRON job to automatically update the cache every 5-10 minutes:
+
+```bash
+# Edit your crontab
+crontab -e
+
+# Add this line to run every 10 minutes
+*/10 * * * * cd /path/to/grand-bornand-wallpaper-engine/website && ./fetch_panoramas.sh
+```
+
+This ensures the web viewer always has access to the most recent panoramas.
 
 ### Project Structure
 
 ```
 website/
-  ├── index.html    # Main HTML structure
-  ├── styles.css    # Styling and animations
-  └── script.js     # Panorama loading and panning logic
+  ├── index.html              # Main HTML structure
+  ├── styles.css              # Styling and animations
+  ├── script.js               # Panorama loading and panning logic
+  ├── fetch_panoramas.sh      # Script to fetch latest panorama URLs
+  ├── panoramas_cache.json    # Generated cache file with panorama URLs
+  └── weather_codes_data.json # Weather icon mappings
 ```
 
 ### Features
@@ -85,21 +110,21 @@ website/
   - Lachat (La Floria)
 - **Variable Speed Control** - Adjust panning speed on the fly:
   - x0 (pause/frozen)
-  - x0.5 (slow)
-  - x1 (default)
+  - x0.25 (very slow)
+  - x0.5 (default)
+  - x1 (normal)
   - x2 (fast)
-  - x5 (debug speed, only on localhost)
+  - x2.5 (debug speed, only on localhost)
 - **Seamless 360° Loop** - Continuous panning with no jarring jumps or direction changes
-- **Smart Scheduling** - Automatically handles different update frequencies:
-  - 10 minutes for Village, Maroly, and Lachat
-  - 30 minutes (at XX:01 and XX:31) for Station
+- **Cached Panorama URLs** - Fast loading from pre-fetched panorama cache
 - **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
-- **Auto-refresh** - Checks for new panoramas every 5 minutes
+- **Auto-refresh** - Checks for new panoramas every minute
+- **Weather Display** - Shows current temperature, weather icon, and elevation in a separate lean box
 - **Fully Responsive** - Adapts seamlessly to window resizing and zoom changes
 - **Clean Interface**:
   - Panorama selector and speed control (bottom-right)
-  - Timestamp display (top-left)
-- **Smart Discovery** - Searches minute-by-minute for 2 hours, then every 10 minutes for next 3 hours
+  - Timestamp display in top box (top-left)
+  - Weather info in separate box below timestamp (top-left)
 - **Full-screen display** - Perfect for displays or kiosks
 
 ### Customization
@@ -107,28 +132,48 @@ website/
 Edit these constants in `script.js`:
 
 ```javascript
-const PAN_DURATION = 180;               // Seconds for full traversal
-const RELOAD_INTERVAL = 5 * 60 * 1000; // Check interval (5 min)
-let speedMultiplier = 0.5;              // Default speed (changed via UI)
+const PAN_DURATION = 180;              // Seconds for full traversal
+const RELOAD_INTERVAL = 60 * 1000;     // Check interval (1 min)
+let speedMultiplier = 0.5;             // Default speed (x0.5, changed via UI)
 ```
 
-The panorama search logic in `findLatestPanorama()` searches:
-- Minute-by-minute for the last 2 hours (120 attempts)
-- Every 10 minutes from 2-5 hours back (18 attempts)
+#### Updating Panorama Cache Frequency
 
-To add more panoramas, update the `PANORAMAS` object:
+The `fetch_panoramas.sh` script fetches the latest panorama URLs from the Skaping website. Adjust your CRON schedule based on how frequently you want updates:
+
+```bash
+# Every 5 minutes (very frequent)
+*/5 * * * * cd /path/to/website && ./fetch_panoramas.sh
+
+# Every 10 minutes (recommended)
+*/10 * * * * cd /path/to/website && ./fetch_panoramas.sh
+
+# Every 30 minutes (less frequent)
+*/30 * * * * cd /path/to/website && ./fetch_panoramas.sh
+```
+
+To add more panoramas, update the `PANORAMAS` object in `script.js`:
 
 ```javascript
 const PANORAMAS = {
     village: {
         name: 'Village',
-        url: 'https://data.skaping.com/le-grand-bornand/village'
+        url: 'https://data.skaping.com/le-grand-bornand/village',
+        latitude: 45.9385,
+        longitude: 6.4203
     },
     // Add more...
 };
 ```
 
-To add special timing for panoramas (like Station's 30-minute intervals), modify the `findLatestPanorama()` function.
+And add the corresponding entry in `fetch_panoramas.sh`:
+
+```bash
+declare -A LOCATIONS=(
+    ["village"]="https://www.skaping.com/le-grand-bornand/village"
+    # Add more...
+)
+```
 
 ---
 
