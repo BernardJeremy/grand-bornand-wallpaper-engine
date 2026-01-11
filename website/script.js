@@ -357,6 +357,47 @@ function updateWeatherDisplay(temperature, weatherCode, isDay, elevation) {
     weatherTemp.textContent = tempText;
 }
 
+// Debug: Cycle through all weather icons (localhost only)
+let weatherCycleInterval = null;
+let currentWeatherIndex = 0;
+let weatherCodesList = [];
+
+function startWeatherIconCycle() {
+    if (weatherCycleInterval) {
+        stopWeatherIconCycle();
+        return;
+    }
+    
+    // Get all weather codes
+    weatherCodesList = Object.keys(weatherCodesData).map(code => parseInt(code));
+    currentWeatherIndex = 0;
+    
+    console.log(`Starting weather icon cycle through ${weatherCodesList.length} codes`);
+    
+    // Cycle through each weather code every 2 seconds
+    weatherCycleInterval = setInterval(() => {
+        const isDay = Math.random() > 0.5; // Random day/night
+        const weatherCode = weatherCodesList[currentWeatherIndex];
+        const fakeTemp = Math.floor(Math.random() * 30) - 5; // -5 to 25°C
+        const fakeElevation = 1000 + Math.floor(Math.random() * 1000); // 1000-2000m
+        
+        console.log(`Weather code ${weatherCode} (${isDay ? 'day' : 'night'}): ${fakeTemp}°C`);
+        updateWeatherDisplay(fakeTemp, weatherCode, isDay, fakeElevation);
+        
+        currentWeatherIndex = (currentWeatherIndex + 1) % weatherCodesList.length;
+    }, 2000);
+}
+
+function stopWeatherIconCycle() {
+    if (weatherCycleInterval) {
+        clearInterval(weatherCycleInterval);
+        weatherCycleInterval = null;
+        console.log('Stopped weather icon cycle');
+        // Refresh real weather
+        fetchWeather();
+    }
+}
+
 // Update date/time display
 function updateDateTime() {
     const panoramaTime = document.getElementById('panorama-time');
@@ -384,6 +425,15 @@ window.onload = async () => {
         x25Option.value = '2.5';
         x25Option.textContent = 'x2.5';
         speedSelector.appendChild(x25Option);
+        
+        // Add keyboard shortcut for weather icon cycling (W key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'w' || e.key === 'W') {
+                startWeatherIconCycle();
+            }
+        });
+        
+        console.log('Debug mode: Press W to cycle through weather icons');
     }
     
     // Load weather codes data
