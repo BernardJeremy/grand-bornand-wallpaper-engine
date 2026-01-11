@@ -1,19 +1,29 @@
+let weatherCodesData = null;
+
 const PANORAMAS = {
     village: {
         name: 'Village',
-        url: 'https://data.skaping.com/le-grand-bornand/village'
+        url: 'https://data.skaping.com/le-grand-bornand/village',
+        latitude: 45.9385,
+        longitude: 6.4203
     },
     station: {
         name: 'Station',
-        url: 'https://data3.skaping.com/grand-bornand/chinaillon'
+        url: 'https://data3.skaping.com/grand-bornand/chinaillon',
+        latitude: 45.972,
+        longitude: 6.4594
     },
     maroly: {
         name: 'Maroly',
-        url: 'https://data3.skaping.com/grand-bornand/terres-rouges'
+        url: 'https://data3.skaping.com/grand-bornand/terres-rouges',
+        latitude: 45.9630,
+        longitude: 6.4876
     },
     lachat: {
         name: 'Lachat',
-        url: 'https://data.skaping.com/grand-bornand/la-floria'
+        url: 'https://data.skaping.com/grand-bornand/la-floria',
+        latitude: 45.959,
+        longitude: 6.4765
     }
 };
 
@@ -243,6 +253,9 @@ async function loadPanorama() {
         panoramaImg2.src = panoramaUrl;
         
         startPanning();
+        
+        // Fetch weather when panorama is loaded
+        fetchWeather();
     } catch (error) {
         console.error('Error loading panorama:', error);
         document.getElementById('loader').style.display = 'none';
@@ -268,13 +281,77 @@ function scheduleReload() {
             panoramaImg1.src = panoramaUrl;
             panoramaImg2.src = panoramaUrl;
             startPanning(true); // Preserve position on auto-reload
+            
+            // Fetch weather when new panorama is loaded
+            fetchWeather();
         }
     }, RELOAD_INTERVAL);
 }
 
+// Load weather codes data
+async function loadWeatherCodes() {
+    try {
+        const response = await fetch('weather_codes_data.json');
+        weatherCodesData = await response.json();
+    } catch (error) {
+        console.error('Error loading weather codes:', error);
+    }
+}
+
+// Get weather icon URL based on weather code
+function getWeatherIcon(weatherCode, isDay) {
+    if (!weatherCodesData) return null;
+    
+    const codeStr = String(weatherCode);
+    const timeOfDay = isDay ? 'day' : 'night';
+    
+    if (weatherCodesData[codeStr] && weatherCodesData[codeStr][timeOfDay]) {
+        return weatherCodesData[codeStr][timeOfDay].image;
+    }
+    
+    return null;
+}
+
+// Fetch current weather from Open-Meteo API
+async function fetchWeather() {
+    try {
+        const panorama = PANORAMAS[currentPanorama];
+        const latitude = panorama.latitude;
+        const longitude = panorama.longitude;
+        
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,is_day`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.current) {
+            const temperature = Math.round(data.current.temperature_2m);
+            const weatherCode = data.current.weather_code;
+            const isDay = data.current.is_day === 1;
+            
+            updateWeatherDisplay(temperature, weatherCode, isDay);
+        }
+    } catch (error) {
+        console.error('Error fetching weather:', error);
+    }
+}
+
+// Update weather display
+function updateWeatherDisplay(temperature, weatherCode, isDay) {
+    const weatherIcon = document.getElementById('weather-icon');
+    const weatherTemp = document.getElementById('weather-temp');
+    
+    const iconUrl = getWeatherIcon(weatherCode, isDay);
+    if (iconUrl) {
+        weatherIcon.src = iconUrl;
+        weatherIcon.classList.add('loaded');
+    }
+    
+    weatherTemp.textContent = `${temperature}°C`;
+}
+
 // Update date/time display
 function updateDateTime() {
-    const datetime = document.getElementById('datetime');
+    const panoramaTime = document.getElementById('panorama-time');
     if (lastUpdate) {
         const dateTimeStr = lastUpdate.toLocaleString(undefined, {
             weekday: 'short',
@@ -284,23 +361,27 @@ function updateDateTime() {
             hour: '2-digit',
             minute: '2-digit'
         });
-        datetime.textContent = dateTimeStr;
+        panoramaTime.textContent = dateTimeStr;
     } else {
-        datetime.textContent = 'Loading...';
+        panoramaTime.textContent = 'Loading...';
     }
 }
 
 // Initialize
-window.onload = () => {
-    // Add x5 speed option if on localhost
+window.onload = async () => {
+    // Add x2.5 speed option if on localhost
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         const speedSelector = document.getElementById('speedSelector');
-        const x5Option = document.createElement('option');
-        x5Option.value = '2.5';
-        x5Option.textContent = 'x5';
-        speedSelector.appendChild(x5Option);
+        const x25Option = document.createElement('option');
+        x25Option.value = '2.5';
+        x25Option.textContent = 'x2.5';
+        speedSelector.appendChild(x25Option);
     }
     
+    // Load weather codes data
+    await loadWeatherCodes();
+    
+    // Initialize panorama (which will also fetch weather)
     loadPanorama();
     scheduleReload();
     updateDateTime();

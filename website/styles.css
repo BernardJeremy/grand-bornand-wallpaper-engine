@@ -63,6 +63,30 @@ body, html {
     z-index: 100;
     backdrop-filter: blur(10px);
     font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#weather-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#weather-icon {
+    width: 32px;
+    height: 32px;
+    display: none;
+}
+
+#weather-icon.loaded {
+    display: block;
+}
+
+#weather-temp {
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 select {
