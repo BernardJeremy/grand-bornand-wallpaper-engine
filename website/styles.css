@@ -126,6 +126,29 @@ select:focus {
     z-index: 50;
 }
 
+#error-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(220, 38, 38, 0.95);
+    color: #fff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    z-index: 100;
+    display: none;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+#error-message.visible {
+    display: block;
+}
+
 @keyframes spin {
     to { transform: translate(-50%, -50%) rotate(360deg); }
 }

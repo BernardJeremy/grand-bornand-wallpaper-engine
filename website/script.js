@@ -1,27 +1,24 @@
 let weatherCodesData = null;
+let panoramasCache = null;
 
 const PANORAMAS = {
     village: {
         name: 'Village',
-        url: 'https://data.skaping.com/le-grand-bornand/village',
         latitude: 45.9385,
         longitude: 6.4203
     },
     station: {
         name: 'Station',
-        url: 'https://data3.skaping.com/grand-bornand/chinaillon',
         latitude: 45.972,
         longitude: 6.4594
     },
     maroly: {
         name: 'Maroly',
-        url: 'https://data3.skaping.com/grand-bornand/terres-rouges',
         latitude: 45.9630,
         longitude: 6.4876
     },
     lachat: {
         name: 'Lachat',
-        url: 'https://data.skaping.com/grand-bornand/la-floria',
         latitude: 45.959,
         longitude: 6.4765
     }
@@ -86,57 +83,48 @@ function formatDateForDisplay(date) {
     });
 }
 
-// Check if image exists
-async function checkImageExists(url) {
+// Load panoramas cache from JSON file
+async function loadPanoramasCache() {
     try {
-        const response = await fetch(url, { method: 'HEAD' });
-        return response.ok && response.headers.get('content-length') > 50000;
-    } catch {
-        return false;
+        const response = await fetch('panoramas_cache.json');
+        if (!response.ok) {
+            throw new Error('panoramas_cache.json file not found');
+        }
+        panoramasCache = await response.json();
+        console.log('Loaded panoramas cache:', panoramasCache);
+    } catch (error) {
+        console.error('Error loading panoramas cache:', error);
+        throw error;
     }
 }
 
-// Find latest available panorama
+// Find latest available panorama from cache
 async function findLatestPanorama() {
-    const now = new Date();
-    const baseUrl = PANORAMAS[currentPanorama].url;
-
-    // Phase 1: Search minute-by-minute for the last 2 hours
-    const minutesPhase1 = 2 * 60; // 120 minutes
-    for (let i = 0; i < minutesPhase1; i++) {
-        const testDate = new Date(now.getTime() - (i * 60 * 1000));
-        const path = formatDateForUrl(testDate);
-        const url = `${baseUrl}/${path}.jpg`;
-
-        console.log(`Trying (minute-by-minute): ${url}`);
-
-        if (await checkImageExists(url)) {
-            console.log(`Found: ${url}`);
-            lastUpdate = testDate;
-            updateDateTime();
-            return url;
-        }
+    // Always reload cache to get latest panorama URLs
+    await loadPanoramasCache();
+    
+    const imageUrl = panoramasCache[currentPanorama];
+    
+    if (!imageUrl || imageUrl === null) {
+        throw new Error(`No panorama URL found for ${PANORAMAS[currentPanorama].name} in cache. Please run fetch_panoramas.sh script.`);
     }
-
-    // Phase 2: Search every 10 minutes for the next 3 hours (from 2 to 5 hours back)
-    const startPhase2 = 2 * 60; // Start at 120 minutes back
-    const endPhase2 = 5 * 60; // End at 300 minutes back (5 hours total)
-    for (let i = startPhase2; i < endPhase2; i += 10) {
-        const testDate = new Date(now.getTime() - (i * 60 * 1000));
-        const path = formatDateForUrl(testDate);
-        const url = `${baseUrl}/${path}.jpg`;
-
-        console.log(`Trying (10-minute intervals): ${url}`);
-
-        if (await checkImageExists(url)) {
-            console.log(`Found: ${url}`);
-            lastUpdate = testDate;
-            updateDateTime();
-            return url;
-        }
+    
+    console.log(`Using cached panorama URL: ${imageUrl}`);
+    
+    // Extract timestamp from URL if possible (format: YYYY/MM/DD/HH-MM or YYYY/MM/DD/large/HH-MM)
+    const timestampMatch = imageUrl.match(/(\d{4})\/(\d{2})\/(\d{2})\/(?:large\/)?(\d{2})-(\d{2})/);
+    if (timestampMatch) {
+        const [, year, month, day, hour, minute] = timestampMatch;
+        lastUpdate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), 0, 0);
+        console.log(`Extracted timestamp from URL: ${year}-${month}-${day} ${hour}:${minute}`);
+        console.log(`Created Date object: ${lastUpdate}`);
+    } else {
+        console.warn('Could not extract timestamp from URL, using current time');
+        lastUpdate = new Date(); // Fallback to current time if timestamp not found
     }
-
-    throw new Error('No panorama found in the last 5 hours');
+    
+    updateDateTime();
+    return imageUrl;
 }
 
 // Start panning animation
@@ -245,6 +233,7 @@ function changeSpeed() {
 async function loadPanorama() {
     try {
         document.getElementById('loader').style.display = 'block';
+        hideError();
         
         panoramaUrl = await findLatestPanorama();
         const panoramaImg1 = document.getElementById('panorama-img1');
@@ -259,7 +248,21 @@ async function loadPanorama() {
     } catch (error) {
         console.error('Error loading panorama:', error);
         document.getElementById('loader').style.display = 'none';
+        showError(error.message || 'Failed to load panorama');
     }
+}
+
+// Show error message
+function showError(message) {
+    const errorEl = document.getElementById('error-message');
+    errorEl.textContent = message;
+    errorEl.classList.add('visible');
+}
+
+// Hide error message
+function hideError() {
+    const errorEl = document.getElementById('error-message');
+    errorEl.classList.remove('visible');
 }
 
 // Reload panorama periodically
@@ -327,8 +330,9 @@ async function fetchWeather() {
             const temperature = Math.round(data.current.temperature_2m);
             const weatherCode = data.current.weather_code;
             const isDay = data.current.is_day === 1;
+            const elevation = data.elevation ? Math.round(data.elevation) : null;
             
-            updateWeatherDisplay(temperature, weatherCode, isDay);
+            updateWeatherDisplay(temperature, weatherCode, isDay, elevation);
         }
     } catch (error) {
         console.error('Error fetching weather:', error);
@@ -336,7 +340,7 @@ async function fetchWeather() {
 }
 
 // Update weather display
-function updateWeatherDisplay(temperature, weatherCode, isDay) {
+function updateWeatherDisplay(temperature, weatherCode, isDay, elevation) {
     const weatherIcon = document.getElementById('weather-icon');
     const weatherTemp = document.getElementById('weather-temp');
     
@@ -346,7 +350,13 @@ function updateWeatherDisplay(temperature, weatherCode, isDay) {
         weatherIcon.classList.add('loaded');
     }
     
-    weatherTemp.textContent = `${temperature}°C`;
+    let tempText = `${temperature}°C`;
+    if (elevation !== null) {
+        tempText += ` (LIVE - ${elevation}m)`;
+    } else {
+        tempText += ' (LIVE)';
+    }
+    weatherTemp.textContent = tempText;
 }
 
 // Update date/time display
@@ -381,10 +391,9 @@ window.onload = async () => {
     // Load weather codes data
     await loadWeatherCodes();
     
-    // Initialize panorama (which will also fetch weather)
+    // Initialize panorama (which will also fetch weather and update datetime)
     loadPanorama();
     scheduleReload();
-    updateDateTime();
 };
 
 // Handle window resize
