@@ -2,6 +2,8 @@
 
 The entire code-base in this repository was created with AI assistance (ChatGPT and GitHub Copilot with Claude Sonnet 4.5).
 
+> **Project Evolution**: This project initially started as a PowerShell desktop wallpaper script for Windows, but evolved into a cross-platform web-based application for better accessibility and user experience. The PowerShell component has been removed, with the web application now at the repository root.
+
 ## Why?
 
 This is a **small, simple, fun project**. The goal was to create a live panorama viewer quickly without spending hours on implementation details.
@@ -9,23 +11,20 @@ This is a **small, simple, fun project**. The goal was to create a live panorama
 ### Time Saved
 
 What would typically take several hours of development:
-- ⏱️ **PowerShell Script**: ~2-3 hours → 1 hour
-- 🌐 **Web Viewer**: ~2-3 hours → 15 minutes  
+- 🌐 **Web Application**: ~4-6 hours → 2 hours  
 - 📝 **Documentation**: ~1 hour → 10 minutes
-- 🐛 **Debugging & Refinement**: ~1-2 hours → 15 minutes
+- 🐛 **Debugging & Refinement**: ~2-3 hours → 30 minutes
 
-**Total**: ~6-9 hours of manual work → **~2 hours with AI assistance**
+**Total**: ~7-10 hours of manual work → **~2.5 hours with AI assistance**
 
 ### What AI Handled
 
-1. **PowerShell Desktop Wallpaper Script**
+1. **Initial PowerShell Exploration** (Later removed from project)
    - Windows API integration for wallpaper manipulation
-   - System tray icon with real-time click handling (threading complexity)
-   - Panorama discovery logic (backward searching)
-   - Image scaling and cropping calculations
-   - Proper cleanup on exit
+   - System tray icon with real-time click handling
+   - This phase helped inform requirements before pivoting to web
 
-2. **Web Viewer (HTML/CSS/JavaScript)**
+2. **Web Application (HTML/CSS/JavaScript)** - Current Implementation
    - Full-screen responsive layout with modular file structure
    - Multiple panorama sources with cache-based URL loading
    - Bash script to fetch latest panorama URLs from og:image meta tags
@@ -43,13 +42,8 @@ What would typically take several hours of development:
 
 3. **Documentation**
    - Comprehensive README with setup instructions
-   - Feature comparison table
-   - Usage examples and customization guides
-
-4. **Bug Fixes**
-   - System tray menu threading issues (frozen UI)
-   - Cross-thread communication with synchronized hashtables
-   - Proper resource disposal
+   - Feature descriptions and usage examples
+   - CRON setup guide for cache automation
 
 ### Human Role
 
@@ -76,22 +70,23 @@ For **production systems**, the balance shifts:
 
 ## Result
 
-A fully functional panorama viewer with:
-- Desktop wallpaper integration (PowerShell)
-- Professional web viewer with 4 panorama locations
+A fully functional web-based panorama viewer with:
+- Professional full-screen display with 4 panorama locations
 - Cache-based panorama loading with bash script and CRON automation
 - Seamless 360° continuous loop animation
 - Variable speed control (6 speeds: x0, x0.25, x0.5, x1, x2, x2.5)
 - Weather display with temperature, icon, and elevation
 - Separate lean, centered boxes for timestamp and weather
 - Fully responsive design that handles resize and zoom
-- Modular, maintainable code structure
+- Modular, maintainable code structure (index.html, styles.css, script.js)
 - Auto-refresh every minute
 
 All completed through iterative AI-assisted development, where the AI handled implementation details while human guidance shaped the features and user experience.
 
-**Initial development**: Under 2 hours
+**Initial development**: Under 2 hours (including PowerShell exploration phase)
 **Iterative improvements**: Multiple refinements through conversation
+- Started with PowerShell wallpaper concept
+- Pivoted to web-based application for cross-platform support
 - Added multiple panorama support
 - Implemented seamless 360° looping
 - Added speed control with debug mode
@@ -102,6 +97,7 @@ All completed through iterative AI-assisted development, where the AI handled im
 - Separated UI into lean, centered boxes
 - Added timestamp-based comparison for reliable updates
 - Added debug features (weather icon cycling)
+- Simplified architecture to web-only, moved files to repository root
 
 Each improvement took minutes instead of hours, demonstrating AI's strength in rapid iteration.
 

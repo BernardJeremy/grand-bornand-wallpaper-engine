@@ -1,14 +1,14 @@
-# Grand-Bornand Live Panorama
+# Grand-Bornand Live Panorama Web Viewer
 
-Two ways to enjoy the Grand-Bornand live webcam panoramas with dynamic panning:
+A full-screen web application displaying live webcam panoramas from Grand-Bornand with smooth panning animation and real-time weather information.
 
-1. **PowerShell Desktop Wallpaper** (`gb_live_wallpaper_daemon.ps1`) - Windows desktop wallpaper
-2. **Web Viewer** (`website/`) - Full-screen browser display
+> **Project Evolution**: This project initially started as a PowerShell desktop wallpaper script for Windows, but evolved into a cross-platform web-based application for better accessibility and user experience.
 
-Both automatically:
-- Find and display the most recent panorama from cached URLs
-- Smoothly pan across the image from right to left, then reverse
-- Auto-refresh to check for new panoramas
+Automatically:
+- Displays the most recent panorama from cached URLs
+- Smoothly pans across the image in a seamless 360° loop
+- Shows real-time weather with temperature, icon, and elevation
+- Auto-refreshes every minute to check for new panoramas
 
 ### Available Panoramas
 
@@ -18,37 +18,9 @@ Both automatically:
 - **Lachat**: https://data.skaping.com/grand-bornand/la-floria/ (every 10 min)
 
 ---
-
-## 🖥️ PowerShell Desktop Wallpaper
-
-### Features
-
-- **System Tray Control**: Right-click tray icon to pause/resume or exit
-- **Visual Status**: Green icon when running, yellow when paused
-- Automatically finds the most recent available panorama
-- Updates panorama every 30 minutes
-- Smooth horizontal panning every 10 seconds
-- Starts from right side and pans left, then reverses
-- Preserves panning direction when new panorama loads
-- Fullscreen wallpaper support (all resolutions)
-- Works on Windows 11 without third-party software
-
----
-
 ## How It Works
 
-### PowerShell Script
-1. Runs continuously with a system tray icon (green = running, yellow = paused)
-2. Every 30 minutes:
-   - Searches backward in 10-minute slots to find the most recent panorama
-   - Downloads it locally as `panorama.jpg`
-   - Continues panning in the current direction
-3. Every 10 seconds:
-   - Crops a screen-sized window from the panorama
-   - Moves the window horizontally to create panning effect
-   - Reverses direction at edges
-
-### Web Viewer
+### Web Application
 1. Opens as a full-screen webpage
 2. Loads panorama URLs from cached JSON file (`panoramas_cache.json`)
 3. Checks for updated panorama URLs every minute (refetches the cache)
@@ -60,20 +32,18 @@ Both automatically:
 
 ---
 
-## 🌐 Web Viewer
-
-### Quick Start
+## 🌐 Quick Start
 
 **Important**: Before opening the web viewer, generate the panorama cache:
 
 ```bash
-cd website
+cd /path/to/grand-bornand-wallpaper-engine
 ./fetch_panoramas.sh
 ```
 
 This creates `panoramas_cache.json` with the latest panorama URLs for all locations.
 
-Then, open `website/index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
+Then, open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari).
 
 ### Keeping Panoramas Updated
 
@@ -84,7 +54,7 @@ Then, open `website/index.html` in any modern browser (Chrome, Firefox, Edge, Sa
 crontab -e
 
 # Add this line to run every 10 minutes
-*/10 * * * * cd /path/to/grand-bornand-wallpaper-engine/website && ./fetch_panoramas.sh
+*/10 * * * * cd /path/to/grand-bornand-wallpaper-engine && ./fetch_panoramas.sh
 ```
 
 This ensures the web viewer always has access to the most recent panoramas.
@@ -92,7 +62,7 @@ This ensures the web viewer always has access to the most recent panoramas.
 ### Project Structure
 
 ```
-website/
+grand-bornand-wallpaper-engine/
   ├── index.html              # Main HTML structure
   ├── styles.css              # Styling and animations
   ├── script.js               # Panorama loading and panning logic
@@ -144,13 +114,13 @@ The `fetch_panoramas.sh` script fetches the latest panorama URLs from the Skapin
 
 ```bash
 # Every 5 minutes (very frequent)
-*/5 * * * * cd /path/to/website && ./fetch_panoramas.sh
+*/5 * * * * cd /path/to/grand-bornand-wallpaper-engine && ./fetch_panoramas.sh
 
 # Every 10 minutes (recommended)
-*/10 * * * * cd /path/to/website && ./fetch_panoramas.sh
+*/10 * * * * cd /path/to/grand-bornand-wallpaper-engine && ./fetch_panoramas.sh
 
 # Every 30 minutes (less frequent)
-*/30 * * * * cd /path/to/website && ./fetch_panoramas.sh
+*/30 * * * * cd /path/to/grand-bornand-wallpaper-engine && ./fetch_panoramas.sh
 ```
 
 #### Debug Features (Localhost Only)
@@ -187,141 +157,7 @@ declare -A LOCATIONS=(
 
 ---
 
-## 🖥️ PowerShell Desktop Wallpaper Setup
-
----
-
-## Requirements
-
-- Windows 11
-- PowerShell 5.1+ (default on Windows 11)
-- Screen resolution: tested on 1920×1080 (100% scale)
-- Internet connection
-
----
-
-## Installation
-
-1. Create a folder:
-   ```
-   C:\Users\YourName\Pictures\Grand-Bornand
-   ```
-
-2. Save the script as:
-   ```
-   gb_wallpaper_daemon.ps1
-   ```
-
-3. Allow script execution (once):
-   ```powershell
-   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-   ```
-
----
-
-## Run Manually
-
-Open PowerShell and run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\YourName\Pictures\Grand-Bornand\gb_wallpaper_daemon.ps1"
-```
-
-A green icon will appear in your system tray. Right-click it to pause/resume or exit.
-
----
-
-## Run Automatically at Startup (Recommended)
-
-Use Task Scheduler:
-
-1. Open **Task Scheduler**
-2. Create Task
-3. Trigger: **At log on**
-4. Action:
-   - Program: `powershell.exe`
-   - Arguments:
-     ```
-     -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\YourName\Pictures\Grand-Bornand\gb_wallpaper_daemon.ps1"
-     ```
-5. Check **Run only when user is logged on**
-
-Now the wallpaper will start automatically every time you log in.
-
----
-
-## Customization
-
-Inside the script you can adjust:
-
-### Pan speed and duration
-```powershell
-$panIntervalSeconds = 10
-$fullTraverseSteps = 180
-```
-
-Example:
-- 10s interval × 180 steps = 30 minutes for a full right→left sweep
-
-### Download frequency
-```powershell
-$downloadInterval = [TimeSpan]::FromMinutes(30)
-```
-
-### Lookback window (if server is delayed)
-```powershell
-$lookbackHours = 48
-```
-
----
-
-## System Tray Controls
-
-- **Right-click** the green tray icon to access controls
-- **Pause**: Stops panning and dPanorama selector dropdown |
-| Panoramas | Village only | 4 locations (Village, Station, Maroly, Lachat)er stays at current position)
-- **Resume**: Continues panning from where it stopped
-- **Exit**: Closes the script and removes tray icon
-
----
-
-## Output Files (PowerShell Script)
-
-The script creates:
-
-```
-Pictures\Grand-Bornand\
-  panorama.jpg   (latest downloaded panorama)
-  frame.jpg      (current wallpaper frame)
-```
-
----
-
-## Comparison
-
-| Feature | PowerShell Script | Web Viewer |
-|---------|------------------|------------|
-| Platform | Windows only | Any OS with browser |
-| Installation | Script + Task Scheduler | Just open HTML file |
-| Integration | Desktop wallpaper | Browser window |
-| Performance | System resources | Browser resources |
-| Controls | System tray icon | On-screen buttons |
-| Auto-start | Task Scheduler | Manual |
-| Refresh Rate | 30 minutes | 5 minutes |
-| Animation | 10-second steps | 60fps smooth |
-
----
-
 ## Notes
-
-### PowerShell Script
-- Wallpaper mode is set to **Fill**
-- Uses Windows native wallpaper API
-- No third-party tools required
-- System tray icon visible when running
-- Panning direction preserved across updates
-
-### Web Viewer
 - Works in any modern browser
 - No server required - runs entirely client-side
 - Can be deployed to web hosting for remote access
@@ -329,12 +165,6 @@ Pictures\Grand-Bornand\
 - Modular code structure for easy customization
 - Supports multiple panorama sources with different update schedulesocal format
 - Responsive to window resizing
-
----
-
-## Stop the Script
-
-Right-click the green tray icon and select **Exit**, or close the PowerShell window.
 
 ---
 
