@@ -38,6 +38,8 @@ What would typically take several hours of development:
    - Robust window resize and zoom handling
    - Cross-browser compatibility
    - Auto-refresh every minute for new panoramas
+   - Timestamp-based comparison (handles URL hostname changes gracefully)
+   - Debug mode: Weather icon cycling (W key on localhost)
 
 3. **Documentation**
    - Comprehensive README with setup instructions
@@ -95,6 +97,11 @@ All completed through iterative AI-assisted development, where the AI handled im
 - Added speed control with debug mode
 - Fixed resize/zoom handling
 - Refactored to modular structure
+- Implemented cache-based panorama loading
+- Added weather display with elevation
+- Separated UI into lean, centered boxes
+- Added timestamp-based comparison for reliable updates
+- Added debug features (weather icon cycling)
 
 Each improvement took minutes instead of hours, demonstrating AI's strength in rapid iteration.
 

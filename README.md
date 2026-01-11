@@ -52,10 +52,11 @@ Both automatically:
 1. Opens as a full-screen webpage
 2. Loads panorama URLs from cached JSON file (`panoramas_cache.json`)
 3. Checks for updated panorama URLs every minute (refetches the cache)
-4. Continuously pans using smooth 60fps animation
-5. Shows panorama timestamp in top box (top-left corner)
-6. Shows weather icon, temperature, and elevation in separate box below (top-left corner)
-7. Provides panorama selector, speed control, and other controls in bottom-right
+4. Compares panorama timestamps (not full URLs) to detect new images
+5. Continuously pans using smooth 60fps animation
+6. Shows panorama timestamp in top box (top-left corner)
+7. Shows weather icon, temperature, and elevation in separate box below (top-left corner)
+8. Provides panorama selector, speed control, and other controls in bottom-right
 
 ---
 
@@ -151,6 +152,15 @@ The `fetch_panoramas.sh` script fetches the latest panorama URLs from the Skapin
 # Every 30 minutes (less frequent)
 */30 * * * * cd /path/to/website && ./fetch_panoramas.sh
 ```
+
+#### Debug Features (Localhost Only)
+
+When running on localhost, additional debug features are available:
+
+- **x2.5 Speed**: Extra fast speed option for testing
+- **Weather Icon Cycle**: Press `W` key to cycle through all available weather icons with random temperatures and elevations (2-second intervals). Press `W` again to stop and return to real weather data.
+
+These features help test the UI without waiting for real weather updates or panorama changes.
 
 To add more panoramas, update the `PANORAMAS` object in `script.js`:
 

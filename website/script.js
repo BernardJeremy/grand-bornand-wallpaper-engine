@@ -271,8 +271,21 @@ function scheduleReload() {
         console.log('Checking for new panorama...');
         const newUrl = await findLatestPanorama();
         
-        if (newUrl !== panoramaUrl) {
-            console.log('New panorama found, reloading...');
+        // Extract timestamps from both URLs to compare
+        const extractTimestamp = (url) => {
+            const match = url.match(/(\d{4})\/(\d{2})\/(\d{2})\/(?:large\/)?(\d{2})-(\d{2})/);
+            if (match) {
+                return `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]}`;
+            }
+            return null;
+        };
+        
+        const currentTimestamp = extractTimestamp(panoramaUrl);
+        const newTimestamp = extractTimestamp(newUrl);
+        
+        // Compare timestamps instead of full URLs (hostname can change)
+        if (newTimestamp && currentTimestamp !== newTimestamp) {
+            console.log(`New panorama found, reloading... (${currentTimestamp} -> ${newTimestamp})`);
             panoramaUrl = newUrl;
             
             if (currentAnimation) {
@@ -287,6 +300,8 @@ function scheduleReload() {
             
             // Fetch weather when new panorama is loaded
             fetchWeather();
+        } else {
+            console.log('No new panorama available');
         }
     }, RELOAD_INTERVAL);
 }
