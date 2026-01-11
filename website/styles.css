@@ -102,6 +102,9 @@ body, html {
     width: 32px;
     height: 32px;
     display: none;
+    background: rgba(200, 200, 200, 0.6);
+    border-radius: 50%;
+    padding: 2px;
 }
 
 #weather-icon.loaded {
