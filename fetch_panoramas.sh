@@ -4,28 +4,29 @@
 
 OUTPUT_FILE="panoramas_cache.json"
 
-# Define the locations and their HTML URLs
-declare -A LOCATIONS=(
-    ["village"]="https://www.skaping.com/le-grand-bornand/village"
-    ["station"]="https://www.skaping.com/le-grand-bornand/chinaillon"
-    ["maroly"]="https://www.skaping.com/le-grand-bornand/terresrouges"
-    ["lachat"]="https://www.skaping.com/le-grand-bornand/mont-lachat"
-)
+# Define the locations and their HTML URLs (name:url pairs)
+LOCATIONS="
+village https://www.skaping.com/le-grand-bornand/village
+station https://www.skaping.com/le-grand-bornand/chinaillon
+maroly https://www.skaping.com/le-grand-bornand/terresrouges
+lachat https://www.skaping.com/le-grand-bornand/mont-lachat
+"
 
 # Start JSON output
 echo "{" > "$OUTPUT_FILE"
 
 first=true
-for location in "${!LOCATIONS[@]}"; do
-    url="${LOCATIONS[$location]}"
+echo "$LOCATIONS" | while read -r location url; do
+    # Skip empty lines
+    [ -z "$location" ] && continue
     
     echo "Fetching $location from $url..."
     
     # Fetch the HTML page
     html=$(curl -s "$url")
     
-    # Extract og:image content using grep and sed
-    image_url=$(echo "$html" | grep -oP '<meta\s+property="og:image"\s+content="\K[^"]+' | head -1)
+    # Extract og:image content using sed (POSIX-compatible)
+    image_url=$(echo "$html" | sed -n 's/.*<meta[^>]*property="og:image"[^>]*content="\([^"]*\)".*/\1/p' | head -1)
     
     if [ -z "$image_url" ]; then
         echo "  Warning: Could not find og:image for $location"
