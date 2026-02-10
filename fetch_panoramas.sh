@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Fetch latest panorama URLs from Skaping website and save to JSON
 
