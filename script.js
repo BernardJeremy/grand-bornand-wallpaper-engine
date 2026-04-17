@@ -106,7 +106,7 @@ async function findLatestPanorama() {
     const imageUrl = panoramasCache[currentPanorama];
     
     if (!imageUrl || imageUrl === null) {
-        throw new Error(`No panorama URL found for ${PANORAMAS[currentPanorama].name} in cache. Please run fetch_panoramas.sh script.`);
+        throw new Error(`Aucun panorama trouvé pour ${PANORAMAS[currentPanorama].name}`);
     }
     
     console.log(`Using cached panorama URL: ${imageUrl}`);
