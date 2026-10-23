@@ -229,6 +229,48 @@ function changeSpeed() {
     // No need to restart animation, it will pick up the new speed on next frame
 }
 
+// Hide all UI overlays, leaving only the panorama
+function hideUI() {
+    document.body.classList.add('ui-hidden');
+    document.activeElement?.blur();
+}
+
+// Bring the UI overlays back
+function showUI() {
+    document.body.classList.remove('ui-hidden');
+}
+
+// Show or hide the UI overlays
+function toggleUI() {
+    if (document.body.classList.contains('ui-hidden')) {
+        showUI();
+    } else {
+        hideUI();
+    }
+}
+
+// Pause the panning (x0), unless it is already paused
+function pausePanning() {
+    const selector = document.getElementById('speedSelector');
+    if (speedMultiplier === 0) return;
+    selector.value = '0';
+    changeSpeed();
+}
+
+// H toggles the UI, Space pauses the panning
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (e.key === 'h' || e.key === 'H') {
+        if (!e.repeat) toggleUI();
+    } else if (e.code === 'Space') {
+        // Keep Space from opening a focused select or clicking a focused button
+        e.preventDefault();
+        document.activeElement?.blur();
+        pausePanning();
+    }
+});
+
 // Load panorama
 async function loadPanorama() {
     try {

@@ -116,7 +116,8 @@ body, html {
     white-space: nowrap;
 }
 
-select {
+select,
+button {
     background: #4ade80;
     color: #000;
     border: none;
@@ -130,13 +131,21 @@ select {
     outline: none;
 }
 
-select:hover {
+select:hover,
+button:hover {
     background: #22c55e;
 }
 
-select:focus {
+select:focus,
+button:focus {
     background: #22c55e;
     box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3);
+}
+
+body.ui-hidden #datetime,
+body.ui-hidden #weather-box,
+body.ui-hidden #controls {
+    display: none;
 }
 
 .loader {

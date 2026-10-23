@@ -86,6 +86,8 @@ grand-bornand-wallpaper-engine/
   - x1 (normal)
   - x2 (fast)
   - x2.5 (debug speed, only on localhost)
+- **Hide UI** - The 👀 button next to the speed selector hides all overlays, leaving only the panorama; press H to show/hide them
+- **Pause shortcut** - Press Space to switch to x0 (does nothing if already at x0)
 - **Seamless 360° Loop** - Continuous panning with no jarring jumps or direction changes
 - **Cached Panorama URLs** - Fast loading from pre-fetched panorama cache
 - **Smooth 60fps animation** - Uses requestAnimationFrame for fluid panning
