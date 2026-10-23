@@ -25,11 +25,14 @@ const PANORAMAS = {
 };
 
 const LOOKBACK_HOURS = 48;
-const PAN_DURATION = 180; // seconds for full right-to-left traversal
+const PAN_DURATION = 180; // seconds for one full image traversal
 const RELOAD_INTERVAL = 60 * 1000; // 1 minute
+const BOOST_SPEED_MULTIPLIER = 5; // Speed while an arrow key is held (labeled as x10 in UI)
 
 let currentPanorama = 'village'; // Default to Village
 let speedMultiplier = 0.5; // Default speed (labeled as x1 in UI)
+let panDirection = 1; // 1 = default direction, -1 = reversed
+let boostHeldKey = null; // Arrow key currently held down for the speed boost, if any
 let currentAnimation = null;
 let panoramaUrl = null;
 let lastUpdate = null;
@@ -183,15 +186,20 @@ function animatePanning(maxOffset, startOffset = 0, initialPosition = null) {
     const baseStep = (maxOffset / duration) * 16; // Base step per frame (60fps)
 
     function animate() {
-        // Skip movement if speed is 0
-        if (speedMultiplier > 0) {
-            const step = baseStep * speedMultiplier;
-            position -= step; // Move left
+        // Holding an arrow key overrides the selected speed
+        const effectiveSpeed = boostHeldKey ? BOOST_SPEED_MULTIPLIER : speedMultiplier;
 
-            // Seamlessly wrap around when reaching the left edge
-            // Reset position when we've panned one full image width
+        // Skip movement if speed is 0
+        if (effectiveSpeed > 0) {
+            const step = baseStep * effectiveSpeed;
+            position -= step * panDirection;
+
+            // Seamlessly wrap around when leaving the [startOffset, startOffset + maxOffset] range
+            // The two images are identical, so shifting by one image width is invisible
             if (position <= startOffset) {
-                position = maxOffset + startOffset;
+                position += maxOffset;
+            } else if (position > maxOffset + startOffset) {
+                position -= maxOffset;
             }
 
             panorama.style.transform = `translateX(-${position}px)`;
@@ -229,6 +237,14 @@ function changeSpeed() {
     // No need to restart animation, it will pick up the new speed on next frame
 }
 
+// Change panning direction
+function changeDirection() {
+    const selector = document.getElementById('directionSelector');
+    panDirection = parseInt(selector.value, 10);
+
+    // No need to restart animation, it will pick up the new direction on next frame
+}
+
 // Hide all UI overlays, leaving only the panorama
 function hideUI() {
     document.body.classList.add('ui-hidden');
@@ -257,18 +273,65 @@ function pausePanning() {
     changeSpeed();
 }
 
-// H toggles the UI, Space pauses the panning
+// Set the panning direction (1 = left, -1 = right) and sync the selector
+function setDirection(direction) {
+    document.getElementById('directionSelector').value = String(direction);
+    changeDirection();
+}
+
+// Resume at x1 when the panning is paused (x0)
+function resumePanning() {
+    if (speedMultiplier !== 0) return;
+    document.getElementById('speedSelector').value = '0.5';
+    changeSpeed();
+}
+
+// Move the speed selector by one step among the available options (+1 = faster, -1 = slower)
+function stepSpeed(delta) {
+    const selector = document.getElementById('speedSelector');
+    const index = Math.min(Math.max(selector.selectedIndex + delta, 0), selector.options.length - 1);
+    if (index === selector.selectedIndex) return;
+    selector.selectedIndex = index;
+    changeSpeed();
+}
+
+// H toggles the UI, Space pauses the panning, Left/Right arrows set the direction
+// (and resume from x0), holding them boosts the speed, Up/Down arrows change the speed
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     if (e.key === 'h' || e.key === 'H') {
         if (!e.repeat) toggleUI();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Keep the arrows from also moving the selection of a focused select
+        e.preventDefault();
+        document.activeElement?.blur();
+        setDirection(e.key === 'ArrowLeft' ? 1 : -1);
+
+        if (e.repeat) {
+            boostHeldKey = e.key;
+        } else {
+            resumePanning();
+        }
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        // Keep the arrows from also moving the selection of a focused select or scrolling
+        e.preventDefault();
+        document.activeElement?.blur();
+        stepSpeed(e.key === 'ArrowUp' ? 1 : -1);
     } else if (e.code === 'Space') {
         // Keep Space from opening a focused select or clicking a focused button
         e.preventDefault();
         document.activeElement?.blur();
         pausePanning();
     }
+});
+
+// Releasing the held arrow key (or leaving the window) restores the selected speed
+document.addEventListener('keyup', (e) => {
+    if (e.key === boostHeldKey) boostHeldKey = null;
+});
+window.addEventListener('blur', () => {
+    boostHeldKey = null;
 });
 
 // Load panorama

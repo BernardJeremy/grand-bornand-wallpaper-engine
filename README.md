@@ -28,7 +28,7 @@ Automatically:
 5. Continuously pans using smooth 60fps animation
 6. Shows panorama timestamp in top box (top-left corner)
 7. Shows weather icon, temperature, and elevation in separate box below (top-left corner)
-8. Provides panorama selector, speed control, and other controls in bottom-right
+8. Provides panorama selector, speed and direction controls, and other controls in bottom-right
 
 ---
 
@@ -86,7 +86,9 @@ grand-bornand-wallpaper-engine/
   - x1 (normal)
   - x2 (fast)
   - x2.5 (debug speed, only on localhost)
-- **Hide UI** - The 👀 button next to the speed selector hides all overlays, leaving only the panorama; press H to show/hide them
+- **Panning Direction** - The → / ← selector next to the speed selector reverses the panning direction on the fly (← is the default); the Left/Right arrow keys do the same
+- **Arrow key navigation** - Left/Right arrows set the direction and, if the speed is x0, resume at x1 (the speed is left alone otherwise); keep an arrow pressed to pan at x10 in that direction, and release it to return to the selected speed; Up/Down arrows step through the speeds available in the speed selector
+- **Hide UI** - The 👀 button next to the direction selector hides all overlays, leaving only the panorama; press H to show/hide them
 - **Pause shortcut** - Press Space to switch to x0 (does nothing if already at x0)
 - **Seamless 360° Loop** - Continuous panning with no jarring jumps or direction changes
 - **Cached Panorama URLs** - Fast loading from pre-fetched panorama cache
