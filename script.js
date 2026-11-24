@@ -270,11 +270,39 @@ function animatePanning(maxOffset, startOffset = 0, initialPosition = null) {
     currentAnimation = requestAnimationFrame(animate);
 }
 
+// Select the panorama given by the ?panorama= URL parameter (e.g. ?panorama=taverne), if it is valid
+function selectPanoramaFromUrl() {
+    const requested = new URLSearchParams(window.location.search).get('panorama');
+    if (requested === null) return;
+
+    const key = requested.trim().toLowerCase();
+    if (!Object.hasOwn(PANORAMAS, key)) {
+        console.warn(`Unknown panorama in URL: "${requested}", using ${currentPanorama}`);
+        return;
+    }
+
+    currentPanorama = key;
+    document.getElementById('panoramaSelector').value = key;
+}
+
+// Reflect the current panorama in the ?panorama= URL parameter without reloading or adding a history entry
+function updateUrlPanorama() {
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('panorama', currentPanorama);
+        history.replaceState(null, '', url);
+    } catch (error) {
+        // e.g. history API unavailable (file:// restrictions); sharing the URL is optional, so ignore
+        console.warn('Could not update the URL:', error);
+    }
+}
+
 // Change panorama
 function changePanorama() {
     const selector = document.getElementById('panoramaSelector');
     currentPanorama = selector.value;
-    
+    updateUrlPanorama();
+
     // Stop current animation
     if (currentAnimation) {
         cancelAnimationFrame(currentAnimation);
@@ -616,6 +644,9 @@ window.onload = async () => {
     // Load weather codes data
     await loadWeatherCodes();
     
+    // Pick the panorama requested in the URL, if any
+    selectPanoramaFromUrl();
+
     // Initialize panorama (which will also fetch weather and update datetime)
     loadPanorama();
     scheduleReload();
