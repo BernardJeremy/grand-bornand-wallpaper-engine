@@ -13,6 +13,7 @@ Automatically:
 ### Available Panoramas
 
 - **Village**: https://data.skaping.com/le-grand-bornand/village/ (every 10 min)
+- **Taverne**: https://data.skaping.com/le-grand-bornand/taverne/ (every 10 min)
 - **Station**: https://data3.skaping.com/grand-bornand/chinaillon/ (every 30 min at XX:01 and XX:31)
 - **Maroly**: https://data3.skaping.com/grand-bornand/terres-rouges/ (every 10 min)
 - **Lachat**: https://data.skaping.com/grand-bornand/la-floria/ (every 10 min)
@@ -74,8 +75,9 @@ grand-bornand-wallpaper-engine/
 ### Features
 
 - **Modular Architecture** - Separate HTML, CSS, and JavaScript files for easy maintenance
-- **Multiple Panoramas** - Switch between 4 different Grand-Bornand viewpoints:
+- **Multiple Panoramas** - Switch between 5 different Grand-Bornand viewpoints:
   - Village (default)
+  - Taverne (TS Taverne)
   - Station (Chinaillon)
   - Maroly (Terres Rouges)
   - Lachat (La Floria)

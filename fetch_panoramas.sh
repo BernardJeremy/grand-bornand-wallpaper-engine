@@ -7,6 +7,7 @@ OUTPUT_FILE="panoramas_cache.json"
 # Define the locations and their HTML URLs (name:url pairs)
 LOCATIONS="
 village https://www.skaping.com/le-grand-bornand/village
+taverne https://www.skaping.com/le-grand-bornand/taverne
 station https://www.skaping.com/le-grand-bornand/chinaillon
 maroly https://www.skaping.com/le-grand-bornand/terresrouges
 lachat https://www.skaping.com/le-grand-bornand/mont-lachat

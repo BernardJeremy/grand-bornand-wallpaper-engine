@@ -7,6 +7,11 @@ const PANORAMAS = {
         latitude: 45.9385,
         longitude: 6.4203
     },
+    taverne: {
+        name: 'Taverne',
+        latitude: 45.9496,
+        longitude: 6.4511
+    },
     station: {
         name: 'Station',
         latitude: 45.972,
