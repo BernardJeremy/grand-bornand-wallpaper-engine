@@ -5,6 +5,9 @@ FROM nginx:alpine-slim
 # Kept in its own early layer so it is cached across content changes.
 RUN apk add --no-cache curl
 
+# Allowlist-only nginx config: serves just the site files, not fetch_panoramas.sh.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Relative paths in fetch_panoramas.sh resolve here, including for `docker exec`.
 WORKDIR /usr/share/nginx/html
 
