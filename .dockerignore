@@ -1,0 +1,7 @@
+# Allowlist: exclude everything, then re-include what the image needs.
+*
+!index.html
+!styles.css
+!script.js
+!weather_codes_data.json
+!fetch_panoramas.sh
