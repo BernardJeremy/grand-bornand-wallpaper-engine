@@ -1,6 +1,9 @@
 let weatherCodesData = null;
 let panoramasCache = null;
 
+// Optional per-panorama `startOffset` (0-1, fraction of the image width scrolled past the left edge):
+// where the panorama starts when selected or loaded. Press K to read the current offset on screen.
+// Omit it to start at the right edge of the image.
 const PANORAMAS = {
     village: {
         name: 'Village',
@@ -10,22 +13,26 @@ const PANORAMAS = {
     taverne: {
         name: 'Taverne',
         latitude: 45.9496,
-        longitude: 6.4511
+        longitude: 6.4511,
+        startOffset: 0.118
     },
     station: {
         name: 'Station',
         latitude: 45.972,
-        longitude: 6.4594
+        longitude: 6.4594,
+        startOffset: 0.340
     },
     maroly: {
         name: 'Maroly',
         latitude: 45.9630,
-        longitude: 6.4876
+        longitude: 6.4876,
+        startOffset: 0.828
     },
     lachat: {
         name: 'Lachat',
         latitude: 45.959,
-        longitude: 6.4765
+        longitude: 6.4765,
+        startOffset: 0.017
     }
 };
 
@@ -42,6 +49,7 @@ let currentAnimation = null;
 let panoramaUrl = null;
 let lastUpdate = null;
 let currentPosition = 0; // Track current panning position
+let panoramaWidth = 0; // Rendered width (px) of one panorama image, used to express the offset as a fraction
 
 // Round time to nearest 10-minute slot
 function roundToTenMinutes(date) {
@@ -135,6 +143,44 @@ async function findLatestPanorama() {
     return imageUrl;
 }
 
+// Starting position (px translated left) of the current panorama.
+// Uses its optional startOffset (fraction of the image width, see PANORAMAS), otherwise the right edge.
+// The result always lies in the range the animation wraps within: (containerVisibleWidth, containerVisibleWidth + imageWidth]
+function getStartPosition(imageWidth, containerVisibleWidth) {
+    const startOffset = PANORAMAS[currentPanorama].startOffset;
+
+    if (typeof startOffset !== 'number' || !Number.isFinite(startOffset)) {
+        return containerVisibleWidth + imageWidth;
+    }
+
+    // The image loops, so only the fractional part matters
+    let position = (((startOffset % 1) + 1) % 1) * imageWidth;
+    while (position <= containerVisibleWidth) {
+        position += imageWidth;
+    }
+    return position;
+}
+
+// Current offset as a fraction (0-1) of the image width: the part of the looping image
+// scrolled past the left edge of the screen. This is the value to use as startOffset.
+function getCurrentOffset() {
+    if (panoramaWidth <= 0) return 0;
+    return (currentPosition % panoramaWidth) / panoramaWidth;
+}
+
+// Refresh the offset readout (only while it is visible)
+function updateOffsetDisplay() {
+    const display = document.getElementById('offset-display');
+    if (!display.classList.contains('visible')) return;
+    display.textContent = `${PANORAMAS[currentPanorama].name} · offset ${getCurrentOffset().toFixed(3)}`;
+}
+
+// Show or hide the offset readout
+function toggleOffsetDisplay() {
+    document.getElementById('offset-display').classList.toggle('visible');
+    updateOffsetDisplay();
+}
+
 // Start panning animation
 function startPanning(preservePosition = false) {
     const panorama = document.getElementById('panorama');
@@ -161,17 +207,20 @@ function startPanning(preservePosition = false) {
             return;
         }
 
-        // Start from preserved position or right side
+        panoramaWidth = imageWidth;
+
+        // Start from preserved position, the panorama's custom start offset, or the right side
         if (preservePosition && currentPosition > 0) {
             panorama.style.transform = `translateX(-${currentPosition}px)`;
         } else {
-            panorama.style.transform = `translateX(-${containerVisibleWidth + maxOffset}px)`;
-            currentPosition = containerVisibleWidth + maxOffset;
+            currentPosition = getStartPosition(imageWidth, containerVisibleWidth);
+            panorama.style.transform = `translateX(-${currentPosition}px)`;
         }
 
         // Animate panning
+        const initialPosition = currentPosition;
         setTimeout(() => {
-            animatePanning(maxOffset, containerVisibleWidth, preservePosition ? currentPosition : (containerVisibleWidth + maxOffset));
+            animatePanning(maxOffset, containerVisibleWidth, initialPosition);
         }, 100);
     };
 
@@ -213,6 +262,7 @@ function animatePanning(maxOffset, startOffset = 0, initialPosition = null) {
 
         // Save current position for reload
         currentPosition = position;
+        updateOffsetDisplay();
 
         currentAnimation = requestAnimationFrame(animate);
     }
@@ -300,13 +350,15 @@ function stepSpeed(delta) {
     changeSpeed();
 }
 
-// H toggles the UI, Space pauses the panning, Left/Right arrows set the direction
-// (and resume from x0), holding them boosts the speed, Up/Down arrows change the speed
+// H toggles the UI, K toggles the offset readout, Space pauses the panning, Left/Right arrows set
+// the direction (and resume from x0), holding them boosts the speed, Up/Down arrows change the speed
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     if (e.key === 'h' || e.key === 'H') {
         if (!e.repeat) toggleUI();
+    } else if (e.key === 'k' || e.key === 'K') {
+        if (!e.repeat) toggleOffsetDisplay();
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         // Keep the arrows from also moving the selection of a focused select
         e.preventDefault();
